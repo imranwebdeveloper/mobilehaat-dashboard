@@ -2,7 +2,7 @@ services:
   dashboard:
     build:
       context: .
-    container_name: mobighor-dashboard
+    container_name: mobilehaat-dashboard
     ports:
       - "3000:3000"
     env_file:

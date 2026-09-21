@@ -1,0 +1,19 @@
+"use client"
+import QueryAndModalWrapper from "@/components/providers/QueryAndModalWrapper"
+import Table from "./Table"
+import { withAuth } from "@/components/hoc"
+import { Permissions } from "@/config/permissions"
+
+const Wrapper = () => {
+  return (
+    <div className="flex h-full flex-1 flex-col bg-muted px-6 py-4">
+      <QueryAndModalWrapper>
+        <Table />
+      </QueryAndModalWrapper>
+    </div>
+  )
+}
+
+export default withAuth(Wrapper, {
+  requiredPermissions: [Permissions.USER_READ],
+})

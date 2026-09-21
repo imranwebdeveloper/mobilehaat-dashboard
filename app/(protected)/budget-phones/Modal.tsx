@@ -1,0 +1,48 @@
+import DisplayConfirmationModal from "@/components/common/DisplayConfirmationModal"
+import { budgetPhoneApi } from "./budget-phones.api"
+import { toast } from "sonner"
+import { useModalContext } from "@/hooks/useModalContext"
+
+type ApiError = {
+  data?: {
+    message?: string
+  }
+}
+
+const Modal = () => {
+  const [deleteData, deleteRes] = budgetPhoneApi.useDeleteBudgetPhoneMutation()
+  const { action, resetAction, itemId, extraState } = useModalContext()
+
+  const handleDelete = async () => {
+    try {
+      if (action === "delete" && itemId) {
+        await deleteData(itemId).unwrap()
+        toast.success("Budget phone deleted successfully")
+      }
+      resetAction()
+    } catch (error: unknown) {
+      const err = error as ApiError
+      resetAction()
+      toast.error(err.data?.message || "Delete failed")
+    }
+  }
+
+  const handleClose = () => {
+    resetAction()
+  }
+
+  return (
+    <div>
+      <DisplayConfirmationModal
+        onDelete={handleDelete}
+        isLoading={deleteRes.isLoading}
+        name={extraState.name || ""}
+        onClose={handleClose}
+        open={action === "delete"}
+        title="Delete budget phone"
+      />
+    </div>
+  )
+}
+
+export default Modal

@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog"
 import Image from "next/image"
 import { format } from "date-fns"
-import { useMemo, useState, useCallback } from "react"
+import { useMemo, useState, useCallback, useEffect } from "react"
 import { X, Calendar, FileText, HardDrive, Maximize2, Copy } from "lucide-react"
 import { toast } from "sonner"
 
@@ -61,22 +61,23 @@ function MediaPreview({ item }: { item: IMedia }) {
 export function MediaDetailsModal() {
   const { itemId, action, resetAction } = useModalContext()
 
-  const { data, isLoading } = mediaApi.useGetMediaByIdQuery(itemId as string, {
-    skip: !itemId || action !== "view",
-  })
+  const { data, isLoading, isError } = mediaApi.useGetMediaByIdQuery(
+    itemId as string,
+    {
+      skip: !itemId || action !== "view",
+    }
+  )
 
   const [updateMedia, { isLoading: isUpdating }] =
     mediaApi.useUpdateMediaMutation()
 
   const item = data?.data
 
-  const [prevItemId, setPrevItemId] = useState<string | null>(null)
   const [edits, setEdits] = useState<Record<string, string>>({})
 
-  if (itemId !== prevItemId) {
-    setPrevItemId(itemId)
+  useEffect(() => {
     setEdits({})
-  }
+  }, [itemId])
 
   const form = useMemo(
     () => ({
@@ -122,8 +123,6 @@ export function MediaDetailsModal() {
     }
   }, [item])
 
-  if (!item || isLoading) return null
-
   /* -------------------------------- Render ------------------------------- */
 
   return (
@@ -137,11 +136,18 @@ export function MediaDetailsModal() {
           {/* Media Details */}
         </Dialog.Title>
         <Dialog.Content className="fixed top-1/2 left-1/2 z-50 flex h-[90vh] w-[95vw] max-w-6xl -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl bg-background shadow-2xl md:flex-row">
-          {/* Preview */}
-
           {isLoading ? (
-            <div>
+            <div className="flex flex-1 items-center justify-center">
               <Loading />
+            </div>
+          ) : isError || !item ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center">
+              <p className="text-sm font-medium text-muted-foreground">
+                Failed to load media details. Please try again.
+              </p>
+              <Button variant="destructive" onClick={resetAction}>
+                Close
+              </Button>
             </div>
           ) : (
             <>

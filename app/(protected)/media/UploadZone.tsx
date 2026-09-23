@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import Permission from "@/components/common/Permission"
 import { Permissions } from "@/config/permissions"
 
-const MAX_FILES = 3
+const MAX_FILES = 5
 const MAX_SIZE = 1 * 1024 * 1024 // 1MB
 const ALLOWED_TYPES = ["image/png", "image/webp"]
 

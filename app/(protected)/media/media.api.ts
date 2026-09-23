@@ -13,10 +13,10 @@ export const mediaApi = configApi.injectEndpoints({
       providesTags: ["Media"],
     }),
 
-    // GET MEDIA BY ID (admin — no ownership check)
+    // GET MEDIA BY ID (same Media collection as the gallery grid)
     getMediaById: build.query<ApiResponse<IMedia>, string>({
       query: (id) => ({
-        url: `/admin/user-media/${id}`,
+        url: `/media/${id}`,
       }),
       providesTags: ["Media"],
     }),

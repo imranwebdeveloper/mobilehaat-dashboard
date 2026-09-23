@@ -441,3 +441,7 @@ export const getExtraFieldLabel = (
   }
   return field.map((f) => f.label)
 }
+
+export const EXTRA_PRESETS = [
+  { group_key: "connectivity", label: "Infrared port", value: "Yes" },
+] as const

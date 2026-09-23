@@ -42,6 +42,7 @@ import {
   cameraFeatures,
   CPU_CORE_OPTIONS,
   displayFeatures,
+  EXTRA_PRESETS,
   memoryFeatures,
   networkTechnologyOptions,
   phonePositioningOptions,
@@ -320,6 +321,34 @@ export default function PhoneForm(props?: {
 
   const phoneTypes = form.watch("phone_type") || []
   const phoneCategories = form.watch("types") || []
+  const extrasValue = form.watch("extras") || []
+
+  const handleExtraPresetToggle = (
+    preset: (typeof EXTRA_PRESETS)[number],
+    checked: boolean
+  ) => {
+    const currentExtras = form.getValues("extras") || []
+    const existingIndex = currentExtras.findIndex(
+      (extra) =>
+        extra.group_key === preset.group_key &&
+        extra.label.toLowerCase() === preset.label.toLowerCase()
+    )
+    if (checked) {
+      if (existingIndex !== -1) return
+      const maxOrder = currentExtras.reduce(
+        (max, extra) => Math.max(max, extra.order ?? 0),
+        -1
+      )
+      appendExtra({
+        group_key: preset.group_key,
+        label: preset.label,
+        value: preset.value,
+        order: maxOrder + 1,
+      })
+    } else if (existingIndex !== -1) {
+      removeExtra(existingIndex)
+    }
+  }
 
   const handleNumberInput =
     (onChange: (value: number) => void) =>
@@ -1310,6 +1339,39 @@ export default function PhoneForm(props?: {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {EXTRA_PRESETS.map((preset) => {
+                      const checked = extrasValue.some(
+                        (extra) =>
+                          extra.group_key === preset.group_key &&
+                          extra.label.toLowerCase() ===
+                            preset.label.toLowerCase()
+                      )
+                      return (
+                        <div
+                          key={`${preset.group_key}-${preset.label}`}
+                          className="flex items-center gap-2"
+                        >
+                          <Checkbox
+                            id={`extra-preset-${preset.group_key}-${preset.label}`}
+                            checked={checked}
+                            onCheckedChange={(value) =>
+                              handleExtraPresetToggle(preset, value === true)
+                            }
+                          />
+                          <label
+                            htmlFor={`extra-preset-${preset.group_key}-${preset.label}`}
+                            className="text-sm font-medium"
+                          >
+                            {preset.label}
+                            <span className="ml-1 font-normal text-muted-foreground">
+                              ({preset.group_key}: {preset.value})
+                            </span>
+                          </label>
+                        </div>
+                      )
+                    })}
+                  </div>
                   {extraFields.map((field, index) => (
                     <div
                       key={field.id}

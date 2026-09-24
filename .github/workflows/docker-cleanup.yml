@@ -1,0 +1,94 @@
+name: Docker Cleanup
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/mobilehaat-dashboard
+
+jobs:
+  cleanup:
+    name: Clean old images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete old images (keep last 10)
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // GHCR API expects the bare package name (no owner prefix).
+            const fullName = '${{ env.IMAGE_NAME }}';
+            const packageName = fullName.includes('/') ? fullName.split('/')[1] : fullName;
+            const perPage = 100;
+            let page = 1;
+            let allVersions = [];
+            let isOrg = false;
+
+            // Try org first, fall back to user
+            const listFn = async () => {
+              try {
+                const res = await github.rest.packages.getAllPackageVersionsForPackageOwnedByOrg({
+                  package_type: 'container',
+                  package_name: packageName,
+                  org: context.repo.owner,
+                  per_page: perPage,
+                  page,
+                });
+                isOrg = true;
+                return res;
+              } catch {
+                return await github.rest.packages.getAllPackageVersionsForPackageOwnedByAuthenticatedUser({
+                  package_type: 'container',
+                  package_name: packageName,
+                  per_page: perPage,
+                  page,
+                });
+              }
+            };
+
+            while (true) {
+              const { data: versions } = await listFn();
+              allVersions.push(...versions);
+              if (versions.length < perPage) break;
+              page++;
+            }
+
+            allVersions.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+
+            const stableVersions = allVersions.filter(v => !v.metadata?.container?.tags?.includes('latest'));
+            const toDelete = stableVersions.slice(10);
+
+            console.log(`Found ${allVersions.length} total versions, keeping 10 stable, deleting ${toDelete.length}`);
+
+            for (const version of toDelete) {
+              try {
+                if (isOrg) {
+                  await github.rest.packages.deletePackageVersionForOrg({
+                    package_type: 'container',
+                    package_name: packageName,
+                    org: context.repo.owner,
+                    package_version_id: version.id,
+                  });
+                } else {
+                  await github.rest.packages.deletePackageVersionForAuthenticatedUser({
+                    package_type: 'container',
+                    package_name: packageName,
+                    package_version_id: version.id,
+                  });
+                }
+                console.log(`Deleted version ${version.id} (${version.metadata?.container?.tags?.join(', ') || 'untagged'})`);
+              } catch (e) {
+                console.log(`Failed to delete version ${version.id}: ${e.message}`);
+              }
+            }

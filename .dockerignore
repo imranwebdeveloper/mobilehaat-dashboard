@@ -4,6 +4,11 @@ node_modules
 .gitignore
 .env
 .env.local
+.env*.local
+.env.production
 docker-compose.yml
+docker-compose.local.yml
 Dockerfile
 README.md
+scripts/
+.github/

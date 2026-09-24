@@ -1,0 +1,147 @@
+name: Docker Build & Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/mobilehaat-dashboard
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  docker:
+    name: Build & Push Docker Image
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=
+            type=raw,value=latest
+
+      - name: Verify required build vars
+        run: |
+          test -n "${{ vars.API_URL }}" || { echo "::error::Missing Actions variable API_URL"; exit 1; }
+          test -n "${{ vars.SCRAPER_API_URL }}" || { echo "::error::Missing Actions variable SCRAPER_API_URL"; exit 1; }
+          test -n "${{ vars.NEXT_PUBLIC_FRONTEND_URL }}" || { echo "::error::Missing Actions variable NEXT_PUBLIC_FRONTEND_URL"; exit 1; }
+          test -n "${{ secrets.API_KEY }}" || { echo "::error::Missing Actions secret API_KEY"; exit 1; }
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            API_URL=${{ vars.API_URL }}
+            SCRAPER_API_URL=${{ vars.SCRAPER_API_URL }}
+            API_KEY=${{ secrets.API_KEY }}
+            NEXT_PUBLIC_FRONTEND_URL=${{ vars.NEXT_PUBLIC_FRONTEND_URL }}
+
+  deploy:
+    name: Deploy to VPS
+    needs: docker
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    environment: production
+    env:
+      IMAGE_TAG: ${{ needs.docker.outputs.image_tag }}
+    steps:
+      - name: Deploy via SSH
+        id: deploy
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/mobilehaat/dashboard
+
+            IMAGE_FULL="ghcr.io/${{ github.repository_owner }}/mobilehaat-dashboard:${IMAGE_TAG}"
+            CONTAINER="mobilehaat-dashboard"
+
+            # Save current image for rollback
+            docker inspect --format='{{.Config.Image}}' "$CONTAINER" > .last-image 2>/dev/null || true
+
+            # Ensure shared network exists (Caddy reaches us through it)
+            docker network inspect mobilehaat-network >/dev/null 2>&1 || docker network create mobilehaat-network
+
+            # Pull new image
+            echo "Pulling $IMAGE_FULL..."
+            docker pull "$IMAGE_FULL"
+
+            # Deploy
+            export IMAGE_TAG
+            docker compose up -d --force-recreate
+
+            # Health check
+            echo "Waiting for health check..."
+            HEALTHY=false
+            for i in $(seq 1 6); do
+              if docker exec "$CONTAINER" wget --no-verbose --tries=1 -q -O- http://localhost:3000/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+                HEALTHY=true
+                break
+              fi
+              echo "Waiting... ($i/6)"
+              sleep 5
+            done
+
+            if [ "$HEALTHY" = true ]; then
+              echo "=== Deploy successful ==="
+              exit 0
+            fi
+
+            # Rollback
+            echo "Health check failed — rolling back..."
+            PREV_IMAGE=$(cat .last-image 2>/dev/null || true)
+            if [ -n "$PREV_IMAGE" ]; then
+              PREV_TAG=$(echo "$PREV_IMAGE" | sed 's|.*/||')
+              export IMAGE_TAG="$PREV_TAG"
+              docker compose up -d --force-recreate
+              echo "Rolled back to $PREV_TAG"
+            fi
+            exit 1
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "## Deployment Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit | \`${{ github.sha }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Image | \`ghcr.io/${{ github.repository_owner }}/mobilehaat-dashboard:${{ needs.docker.outputs.image_tag }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| VPS Host | \`${{ secrets.VPS_HOST }}\` |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Status | ${{ steps.deploy.outcome == 'success' && 'Deployed' || 'Failed' }} |" >> "$GITHUB_STEP_SUMMARY"

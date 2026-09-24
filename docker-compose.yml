@@ -1,15 +1,46 @@
 services:
   dashboard:
-    build:
-      context: .
+    image: ghcr.io/imranwebdeveloper/mobilehaat-dashboard:${IMAGE_TAG:-latest}
     container_name: mobilehaat-dashboard
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     env_file:
-      - .env.local
+      - .env.production
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: "0.0.0.0"
     restart: unless-stopped
     read_only: true
-    security_opt:
-      - no-new-privileges:true
     tmpfs:
       - /tmp
+      # Writable Next.js file-system cache. Required because the container
+      # runs read-only — without it, cache writes fail at runtime.
+      - /app/.next/cache
+    networks:
+      # Shared with the backend stack so Caddy (dash.mobilehaat.com -> dashboard:3000)
+      # can reach this container. Create once on the VPS:
+      #   docker network create mobilehaat-network
+      - mobilehaat-network
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 -q -O- http://127.0.0.1:3000/api/health | grep -q 'status.*ok'"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  mobilehaat-network:
+    external: true

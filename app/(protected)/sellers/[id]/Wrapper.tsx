@@ -460,7 +460,7 @@ const DetailContent = () => {
                     <DetailRow
                       label="Status"
                       value={sub.status}
-                      badge={<StatusBadge status={sub.status as any} />}
+                      badge={<StatusBadge status={sub.status} />}
                     />
                     <DetailRow
                       label="Max Active Offers"

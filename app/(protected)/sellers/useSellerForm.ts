@@ -16,6 +16,7 @@ import {
   SellerVerificationStatus,
 } from "./seller.type"
 import { sellerApi } from "./seller.api"
+import type { IMedia } from "../media/media.type"
 
 const toCoordNumber = (v?: string): number | undefined => {
   if (v === undefined || v.trim() === "") return undefined
@@ -23,12 +24,12 @@ const toCoordNumber = (v?: string): number | undefined => {
   return Number.isFinite(n) ? n : undefined
 }
 
-const toMediaFormValue = (media?: any | string | null): string => {
+const toMediaFormValue = (media?: IMedia | string | null): string => {
   if (!media) return ""
   return typeof media === "string" ? media : media._id || ""
 }
 
-const toMediaUrl = (media?: any | string | null): string => {
+const toMediaUrl = (media?: IMedia | string | null): string => {
   if (!media) return ""
   if (typeof media === "string") return ""
   return media.url || ""

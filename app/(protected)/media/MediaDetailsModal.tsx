@@ -3,7 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog"
 import Image from "next/image"
 import { format } from "date-fns"
-import { useMemo, useState, useCallback, useEffect } from "react"
+import { useMemo, useState, useCallback } from "react"
 import { X, Calendar, FileText, HardDrive, Maximize2, Copy } from "lucide-react"
 import { toast } from "sonner"
 
@@ -75,9 +75,14 @@ export function MediaDetailsModal() {
 
   const [edits, setEdits] = useState<Record<string, string>>({})
 
-  useEffect(() => {
+  // Reset edits when switching items — done during render (React-endorsed
+  // "adjust state" pattern) instead of setState-in-effect to avoid cascading
+  // renders.
+  const [prevItemId, setPrevItemId] = useState(itemId)
+  if (prevItemId !== itemId) {
+    setPrevItemId(itemId)
     setEdits({})
-  }, [itemId])
+  }
 
   const form = useMemo(
     () => ({

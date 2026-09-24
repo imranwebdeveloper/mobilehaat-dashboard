@@ -1,6 +1,6 @@
 "use client"
 
-import { Controller, useFieldArray } from "react-hook-form"
+import { Controller, useFieldArray, type Control } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ComparisonStatus } from "./comparisons.type"
+import type { ComparisonFormValues } from "./comparisons.dto"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,13 +41,20 @@ function ScoresCard({
   overallA,
   overallB,
 }: {
-  control: any
+  control: Control<ComparisonFormValues>
   phoneNameA?: string
   phoneNameB?: string
   overallA: number
   overallB: number
 }) {
-  const categories = [
+  type ScorePath =
+    | "scores.display"
+    | "scores.performance"
+    | "scores.camera"
+    | "scores.battery"
+    | "scores.design"
+    | "scores.value"
+  const categories: { label: string; path: ScorePath }[] = [
     { label: "Display", path: "scores.display" },
     { label: "Performance", path: "scores.performance" },
     { label: "Camera", path: "scores.camera" },
@@ -230,7 +238,7 @@ function ScoresCard({
 
 // ─── Best For Card (editable) ───────────────────────────────────────
 
-function BestForCard({ control }: { control: any }) {
+function BestForCard({ control }: { control: Control<ComparisonFormValues> }) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -273,7 +281,7 @@ function BestForCard({ control }: { control: any }) {
 
 // ─── FAQ Card ───────────────────────────────────────────────────────
 
-function FaqCard({ control }: { control: any }) {
+function FaqCard({ control }: { control: Control<ComparisonFormValues> }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "faqs",

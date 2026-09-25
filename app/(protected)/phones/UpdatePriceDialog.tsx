@@ -31,6 +31,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller } from "react-hook-form"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
+import { formatBDT, formatDate } from "@/lib/utils"
 
 const handleNumberInput =
   (onChange: (value: number) => void) =>
@@ -161,6 +162,15 @@ const UpdatePriceDialog = ({
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm text-muted-foreground">
+            Approximate price
+          </span>
+          <span className="text-base font-bold">
+            {formatBDT(phone.approximate_price_bd || 0)}
+          </span>
+        </div>
+
         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
           {variants.length === 0 ? (
             <p className="text-sm text-muted-foreground">
@@ -174,7 +184,7 @@ const UpdatePriceDialog = ({
                     <TableHead>Variant</TableHead>
                     <TableHead>Official price</TableHead>
                     <TableHead>Unofficial price</TableHead>
-                    <TableHead>Currency</TableHead>
+                    <TableHead>Last updated</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -225,21 +235,8 @@ const UpdatePriceDialog = ({
                           )}
                         />
                       </TableCell>
-                      <TableCell>
-                        <Controller
-                          control={form.control}
-                          name={`variants.${index}.currency`}
-                          render={({ field }) => (
-                            <select
-                              aria-label={`Currency for ${variant.ram}GB ${variant.storage}GB`}
-                              className="flex h-10 w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                              {...field}
-                            >
-                              <option value="BDT">BDT</option>
-                              <option value="USD">USD</option>
-                            </select>
-                          )}
-                        />
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {formatDate(variant.updatedAt)}
                       </TableCell>
                     </TableRow>
                   ))}

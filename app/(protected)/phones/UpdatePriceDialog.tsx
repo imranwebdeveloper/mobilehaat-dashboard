@@ -19,6 +19,14 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 import { Textarea } from "@/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Controller } from "react-hook-form"
@@ -159,91 +167,84 @@ const UpdatePriceDialog = ({
               No variants found for this phone.
             </p>
           ) : (
-            <div className="space-y-4">
-              {variants.map((variant, index) => (
-                <div
-                  key={variant._id}
-                  className="space-y-3 rounded-lg border p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">
-                      {variant.ram}GB / {variant.storage}GB
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      Currency
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    <Controller
-                      control={form.control}
-                      name={`variants.${index}.official_price`}
-                      render={({ field }) => (
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                            Official Price
-                          </label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            min={0}
-                            {...field}
-                            value={
-                              Number.isNaN(field.value)
-                                ? ""
-                                : (field.value ?? "")
-                            }
-                            onChange={handleNumberInput(field.onChange)}
-                          />
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      control={form.control}
-                      name={`variants.${index}.unofficial_price`}
-                      render={({ field }) => (
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                            Unofficial Price
-                          </label>
-                          <Input
-                            type="number"
-                            placeholder="0"
-                            min={0}
-                            {...field}
-                            value={
-                              Number.isNaN(field.value)
-                                ? ""
-                                : (field.value ?? "")
-                            }
-                            onChange={handleNumberInput(field.onChange)}
-                          />
-                        </div>
-                      )}
-                    />
-
-                    <Controller
-                      control={form.control}
-                      name={`variants.${index}.currency`}
-                      render={({ field }) => (
-                        <div>
-                          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                            Currency
-                          </label>
-                          <select
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            {...field}
-                          >
-                            <option value="BDT">BDT</option>
-                            <option value="USD">USD</option>
-                          </select>
-                        </div>
-                      )}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Variant</TableHead>
+                    <TableHead>Official price</TableHead>
+                    <TableHead>Unofficial price</TableHead>
+                    <TableHead>Currency</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {variants.map((variant, index) => (
+                    <TableRow key={variant._id}>
+                      <TableCell className="font-medium whitespace-nowrap">
+                        {variant.ram}GB / {variant.storage}GB
+                      </TableCell>
+                      <TableCell>
+                        <Controller
+                          control={form.control}
+                          name={`variants.${index}.official_price`}
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              min={0}
+                              aria-label={`Official price for ${variant.ram}GB ${variant.storage}GB`}
+                              {...field}
+                              value={
+                                Number.isNaN(field.value)
+                                  ? ""
+                                  : (field.value ?? "")
+                              }
+                              onChange={handleNumberInput(field.onChange)}
+                            />
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Controller
+                          control={form.control}
+                          name={`variants.${index}.unofficial_price`}
+                          render={({ field }) => (
+                            <Input
+                              type="number"
+                              placeholder="0"
+                              min={0}
+                              aria-label={`Unofficial price for ${variant.ram}GB ${variant.storage}GB`}
+                              {...field}
+                              value={
+                                Number.isNaN(field.value)
+                                  ? ""
+                                  : (field.value ?? "")
+                              }
+                              onChange={handleNumberInput(field.onChange)}
+                            />
+                          )}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Controller
+                          control={form.control}
+                          name={`variants.${index}.currency`}
+                          render={({ field }) => (
+                            <select
+                              aria-label={`Currency for ${variant.ram}GB ${variant.storage}GB`}
+                              className="flex h-10 w-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              {...field}
+                            >
+                              <option value="BDT">BDT</option>
+                              <option value="USD">USD</option>
+                            </select>
+                          )}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           )}
 

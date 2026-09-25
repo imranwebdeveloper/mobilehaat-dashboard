@@ -30,8 +30,16 @@ pnpm-debug.log*
 
 # env files
 .env
+.env.development
+.env.production
 .env*.local
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# next-agents-md
+.next-docs/
+
+.vercel
+.env*
+!.env.example

@@ -110,16 +110,16 @@ jobs:
             export IMAGE_TAG
             docker compose up -d --force-recreate
 
-            # Health check
+            # Health check (Next standalone can take >60s on first boot)
             echo "Waiting for health check..."
             HEALTHY=false
-            for i in $(seq 1 6); do
+            for i in $(seq 1 12); do
               if docker exec "$CONTAINER" wget --no-verbose --tries=1 -q -O- http://localhost:3000/api/health 2>/dev/null | grep -q '"status":"ok"'; then
                 HEALTHY=true
                 break
               fi
-              echo "Waiting... ($i/6)"
-              sleep 5
+              echo "Waiting... ($i/12)"
+              sleep 10
             done
 
             if [ "$HEALTHY" = true ]; then

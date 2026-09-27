@@ -10,6 +10,10 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOSTNAME: "0.0.0.0"
+      # Server-side fetches go direct to backend/scraper services (same network).
+      # Browsers keep using the public build-time URLs.
+      API_URL_INTERNAL: http://backend:5000/api
+      SCRAPER_API_URL_INTERNAL: http://scraper:3000/api
     restart: unless-stopped
     read_only: true
     tmpfs:

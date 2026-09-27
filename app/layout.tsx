@@ -15,6 +15,10 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+// Admin panel renders on demand: prerendering at build time fails whenever
+// the backend is unreachable (CI has no local API). No SEO need behind auth.
+export const dynamic = "force-dynamic"
+
 export async function generateMetadata(): Promise<Metadata> {
   const res = await getSiteSettings()
   const data = res.data

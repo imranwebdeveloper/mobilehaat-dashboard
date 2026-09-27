@@ -1,6 +1,15 @@
+const isServer = typeof window === "undefined"
+
 export const config = {
   env: {
-    API_URL: process.env["API_URL"],
+    // Server-side: prefer direct service addresses (no TLS hairpin through
+    // Caddy). Browsers always use the public build-time URLs.
+    API_URL:
+      (isServer && process.env["API_URL_INTERNAL"]) ||
+      process.env["API_URL"],
+    SCRAPER_API_URL:
+      (isServer && process.env["SCRAPER_API_URL_INTERNAL"]) ||
+      process.env["SCRAPER_API_URL"],
     API_KEY: process.env["API_KEY"],
     NEXTAUTH_SECRET: `${process.env["NEXTAUTH_SECRET"]}`,
     NEXTAUTH_URL: `${process.env["NEXTAUTH_URL"]}`,

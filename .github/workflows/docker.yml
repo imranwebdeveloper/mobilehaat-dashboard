@@ -114,7 +114,7 @@ jobs:
             echo "Waiting for health check..."
             HEALTHY=false
             for i in $(seq 1 12); do
-              if docker exec "$CONTAINER" wget --no-verbose --tries=1 -q -O- http://localhost:3000/api/health 2>/dev/null | grep -q '"status":"ok"'; then
+              if docker exec "$CONTAINER" wget --no-verbose --tries=1 -q -O- http://127.0.0.1:3000/api/health 2>/dev/null | grep -q '"status":"ok"'; then
                 HEALTHY=true
                 break
               fi

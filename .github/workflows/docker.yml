@@ -131,7 +131,7 @@ jobs:
             echo "Health check failed — rolling back..."
             PREV_IMAGE=$(cat .last-image 2>/dev/null || true)
             if [ -n "$PREV_IMAGE" ]; then
-              PREV_TAG=$(echo "$PREV_IMAGE" | sed 's|.*/||')
+              PREV_TAG="${PREV_IMAGE##*:}"
               export IMAGE_TAG="$PREV_TAG"
               docker compose up -d --force-recreate
               echo "Rolled back to $PREV_TAG"

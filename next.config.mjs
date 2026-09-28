@@ -11,6 +11,7 @@ const nextConfig = {
   env: {
     API_URL: process.env.API_URL,
     SCRAPER_API_URL: process.env.SCRAPER_API_URL,
+    API_KEY: process.env.API_KEY,
   },
 
   images: {

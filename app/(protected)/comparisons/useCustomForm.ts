@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useForm } from "react-hook-form"
+import { useFieldArray, useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
@@ -60,6 +60,14 @@ export const useCustomForm = () => {
     resolver: zodResolver(schema),
     defaultValues,
   })
+
+  // Lifted here (instead of inside FaqCard) so AI-fill can replace rows.
+  const {
+    fields: faqFields,
+    append: appendFaq,
+    remove: removeFaq,
+    replace: replaceFaqs,
+  } = useFieldArray({ control: form.control, name: "faqs" })
 
   const titleValue = form.watch("title")
   const selectedPhones = form.watch("phones")
@@ -149,15 +157,45 @@ export const useCustomForm = () => {
         form.setValue("verdict", data.verdict, { shouldValidate: true })
       }
       if (data.best_for) {
-        form.setValue("best_for", data.best_for)
+        // Per-leaf sets so nested Controllers reliably re-render.
+        form.setValue("best_for.phone_a", data.best_for.phone_a ?? "", {
+          shouldDirty: true,
+        })
+        form.setValue("best_for.phone_b", data.best_for.phone_b ?? "", {
+          shouldDirty: true,
+        })
         setBestFor(data.best_for)
       }
       if (data.faqs) {
-        form.setValue("faqs", data.faqs)
+        // setValue alone never renders useFieldArray rows — must replace.
+        replaceFaqs(data.faqs)
         setFaqs(data.faqs)
       }
       if (data.scores) {
-        form.setValue("scores", data.scores)
+        // Per-category sets so each score Controller reliably re-renders.
+        const pairs: (keyof ComparisonScores)[] = [
+          "display",
+          "performance",
+          "camera",
+          "battery",
+          "design",
+          "value",
+          "overall",
+          "best_value",
+        ]
+        pairs.forEach((key) => {
+          const pair = data.scores[key]
+          if (pair) {
+            form.setValue(
+              `scores.${key}`,
+              {
+                phone_a: Number(pair.phone_a) || 0,
+                phone_b: Number(pair.phone_b) || 0,
+              },
+              { shouldDirty: true }
+            )
+          }
+        })
         setScores(data.scores)
       }
       if (data.meta_title) {
@@ -227,5 +265,8 @@ export const useCustomForm = () => {
     scores,
     bestFor,
     faqs,
+    faqFields,
+    appendFaq,
+    removeFaq,
   }
 }

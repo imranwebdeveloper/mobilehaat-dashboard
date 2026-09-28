@@ -1,6 +1,6 @@
 "use client"
 
-import { Controller, useFieldArray, type Control } from "react-hook-form"
+import { Controller, type Control } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
@@ -281,12 +281,17 @@ function BestForCard({ control }: { control: Control<ComparisonFormValues> }) {
 
 // ─── FAQ Card ───────────────────────────────────────────────────────
 
-function FaqCard({ control }: { control: Control<ComparisonFormValues> }) {
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "faqs",
-  })
-
+function FaqCard({
+  control,
+  fields,
+  append,
+  remove,
+}: {
+  control: Control<ComparisonFormValues>
+  fields: { id: string; question?: string; answer?: string }[]
+  append: (value: { question: string; answer: string }) => void
+  remove: (index: number) => void
+}) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -369,6 +374,9 @@ export default function Form() {
     handleGenerateAi,
     isGenerating,
     selectedPhones,
+    faqFields,
+    appendFaq,
+    removeFaq,
   } = useCustomForm()
 
   if (isFetching) {
@@ -537,7 +545,7 @@ export default function Form() {
               </CardContent>
             </Card>
 
-            <FaqCard control={form.control} />
+            <FaqCard control={form.control} fields={faqFields} append={appendFaq} remove={removeFaq} />
 
             <Card>
               <CardHeader>

@@ -27,6 +27,21 @@ const faqSchema = z.object({
   answer: z.string(),
 })
 
+const keyDifferenceSchema = z.object({
+  category: z.enum([
+    "display",
+    "performance",
+    "camera",
+    "battery",
+    "design",
+    "value",
+  ]),
+  phone_a_value: z.string().min(1).max(100),
+  phone_b_value: z.string().min(1).max(100),
+  point: z.string().max(300).optional(),
+  winner: z.enum(["phone_a", "phone_b"]),
+})
+
 export const comparisonSchema = () => {
   return z.object({
     title: z.string().min(1, "Title is required").max(200),
@@ -40,6 +55,7 @@ export const comparisonSchema = () => {
     best_for: bestForSchema.optional(),
     faqs: z.array(faqSchema).optional(),
     scores: scoresSchema.optional(),
+    key_differences: z.array(keyDifferenceSchema).max(6).optional(),
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     analysisId: z.string().optional(),

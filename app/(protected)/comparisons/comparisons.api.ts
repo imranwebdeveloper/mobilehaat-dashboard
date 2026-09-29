@@ -6,6 +6,7 @@ import {
   ComparisonScores,
   ComparisonBestFor,
   ComparisonFaq,
+  ComparisonKeyDifference,
 } from "./comparisons.type"
 import { ComparisonFormValues } from "./comparisons.dto"
 
@@ -19,6 +20,7 @@ export interface AiComparisonData {
   meta_title: string
   meta_description: string
   scores: ComparisonScores
+  key_differences: ComparisonKeyDifference[]
   analysisId: string
 }
 

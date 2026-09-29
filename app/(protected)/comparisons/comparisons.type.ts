@@ -28,6 +28,27 @@ export interface ComparisonFaq {
   answer: string
 }
 
+export const KEY_DIFFERENCE_CATEGORIES = [
+  "display",
+  "performance",
+  "camera",
+  "battery",
+  "design",
+  "value",
+] as const
+
+export type KeyDifferenceCategory = (typeof KEY_DIFFERENCE_CATEGORIES)[number]
+
+export type KeyDifferenceWinner = "phone_a" | "phone_b"
+
+export interface ComparisonKeyDifference {
+  category: KeyDifferenceCategory
+  phone_a_value: string
+  phone_b_value: string
+  point?: string
+  winner: KeyDifferenceWinner
+}
+
 export interface IComparison {
   _id?: string
   title: string
@@ -39,6 +60,7 @@ export interface IComparison {
   best_for?: ComparisonBestFor
   faqs?: ComparisonFaq[]
   scores?: ComparisonScores
+  key_differences?: ComparisonKeyDifference[]
   meta_title?: string
   meta_description?: string
   analysisId?: string

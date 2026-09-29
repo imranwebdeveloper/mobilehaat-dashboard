@@ -1,6 +1,12 @@
 "use client"
 
-import { Controller, type Control } from "react-hook-form"
+import {
+  Controller,
+  type Control,
+  type FieldArrayWithId,
+  type UseFieldArrayAppend,
+  type UseFieldArrayRemove,
+} from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
@@ -13,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ComparisonStatus } from "./comparisons.type"
+import { KEY_DIFFERENCE_CATEGORIES } from "./comparisons.type"
 import type { ComparisonFormValues } from "./comparisons.dto"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -22,6 +29,7 @@ import {
   Sparkles,
   Trophy,
   TrendingUp,
+  Zap,
   Plus,
   Trash2,
 } from "lucide-react"
@@ -356,6 +364,167 @@ function FaqCard({
   )
 }
 
+// ─── Key Differences Card ────────────────────────────────────────────
+
+function KeyDifferencesCard({
+  control,
+  fields,
+  append,
+  remove,
+  phoneNameA,
+  phoneNameB,
+}: {
+  control: Control<ComparisonFormValues>
+  fields: FieldArrayWithId<ComparisonFormValues, "key_differences", "id">[]
+  append: UseFieldArrayAppend<ComparisonFormValues, "key_differences">
+  remove: UseFieldArrayRemove
+  phoneNameA?: string
+  phoneNameB?: string
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Zap className="h-4 w-4" />
+            Key Differences
+          </CardTitle>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={fields.length >= 6}
+            onClick={() =>
+              append({
+                category: "display",
+                phone_a_value: "",
+                phone_b_value: "",
+                point: "",
+                winner: "phone_a",
+              })
+            }
+          >
+            <Plus className="mr-1 h-3 w-3" />
+            Add
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {fields.length === 0 && (
+          <p className="text-xs text-muted-foreground">
+            No key differences yet. Generate with AI or click &quot;Add&quot;
+            to create one.
+          </p>
+        )}
+        {fields.map((field, index) => (
+          <div key={field.id} className="space-y-2 rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <Controller
+                control={control}
+                name={`key_differences.${index}.category`}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    onValueChange={(value) => {
+                      if (value) field.onChange(value)
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger className="h-8 flex-1 text-xs capitalize">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {KEY_DIFFERENCE_CATEGORIES.map((cat) => (
+                        <SelectItem
+                          key={cat}
+                          value={cat}
+                          className="text-xs capitalize"
+                        >
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <Controller
+                control={control}
+                name={`key_differences.${index}.winner`}
+                render={({ field }) => (
+                  <Select
+                    {...field}
+                    onValueChange={(value) => {
+                      if (value) field.onChange(value)
+                    }}
+                    value={field.value}
+                  >
+                    <SelectTrigger className="h-8 flex-1 text-xs">
+                      <SelectValue placeholder="Winner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="phone_a" className="text-xs">
+                        {phoneNameA || "Phone A"} wins
+                      </SelectItem>
+                      <SelectItem value="phone_b" className="text-xs">
+                        {phoneNameB || "Phone B"} wins
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => remove(index)}
+                className="h-8 w-8 shrink-0 p-0 text-destructive"
+              >
+                <Trash2 className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Controller
+                control={control}
+                name={`key_differences.${index}.phone_a_value`}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder={phoneNameA || "Phone A value"}
+                    className="h-8 text-xs"
+                  />
+                )}
+              />
+              <Controller
+                control={control}
+                name={`key_differences.${index}.phone_b_value`}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder={phoneNameB || "Phone B value"}
+                    className="h-8 text-xs"
+                  />
+                )}
+              />
+            </div>
+            <Controller
+              control={control}
+              name={`key_differences.${index}.point`}
+              render={({ field }) => (
+                <Input
+                  {...field}
+                  value={field.value ?? ""}
+                  placeholder="Practical impact (optional)"
+                  className="h-8 text-xs"
+                />
+              )}
+            />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Main Form ──────────────────────────────────────────────────────
 
 export default function Form() {
@@ -377,6 +546,9 @@ export default function Form() {
     faqFields,
     appendFaq,
     removeFaq,
+    kdFields,
+    appendKd,
+    removeKd,
   } = useCustomForm()
 
   if (isFetching) {
@@ -546,6 +718,15 @@ export default function Form() {
             </Card>
 
             <FaqCard control={form.control} fields={faqFields} append={appendFaq} remove={removeFaq} />
+
+            <KeyDifferencesCard
+              control={form.control}
+              fields={kdFields}
+              append={appendKd}
+              remove={removeKd}
+              phoneNameA={phones[0]?.label}
+              phoneNameB={phones[1]?.label}
+            />
 
             <Card>
               <CardHeader>

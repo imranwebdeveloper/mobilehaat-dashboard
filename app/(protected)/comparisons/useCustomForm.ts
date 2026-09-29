@@ -61,13 +61,19 @@ export const useCustomForm = () => {
     defaultValues,
   })
 
-  // Lifted here (instead of inside FaqCard) so AI-fill can replace rows.
+  // Lifted here (instead of inside cards) so AI-fill can replace rows.
   const {
     fields: faqFields,
     append: appendFaq,
     remove: removeFaq,
     replace: replaceFaqs,
   } = useFieldArray({ control: form.control, name: "faqs" })
+  const {
+    fields: kdFields,
+    append: appendKd,
+    remove: removeKd,
+    replace: replaceKds,
+  } = useFieldArray({ control: form.control, name: "key_differences" })
 
   const titleValue = form.watch("title")
   const selectedPhones = form.watch("phones")
@@ -107,6 +113,7 @@ export const useCustomForm = () => {
         best_for: data.best_for,
         faqs: data.faqs,
         scores: data.scores,
+        key_differences: data.key_differences,
         meta_title: data.meta_title || "",
         meta_description: data.meta_description || "",
         analysisId:
@@ -170,6 +177,9 @@ export const useCustomForm = () => {
         // setValue alone never renders useFieldArray rows — must replace.
         replaceFaqs(data.faqs)
         setFaqs(data.faqs)
+      }
+      if (data.key_differences) {
+        replaceKds(data.key_differences)
       }
       if (data.scores) {
         // Per-category sets so each score Controller reliably re-renders.
@@ -268,5 +278,8 @@ export const useCustomForm = () => {
     faqFields,
     appendFaq,
     removeFaq,
+    kdFields,
+    appendKd,
+    removeKd,
   }
 }

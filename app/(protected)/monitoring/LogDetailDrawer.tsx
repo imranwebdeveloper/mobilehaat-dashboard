@@ -1,11 +1,11 @@
 "use client"
 
 import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer"
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { LogRow } from "./MonitoringTable"
@@ -26,10 +26,10 @@ const LogDetailDrawer = ({
   const event = row ? String(row.event || "") : ""
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[85vh]">
-        <DrawerHeader className="border-b px-6 py-4">
-          <DrawerTitle className="flex items-center gap-2">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="flex w-full flex-col gap-0 p-0 sm:max-w-lg">
+        <SheetHeader className="border-b px-6 py-4 text-left">
+          <SheetTitle className="flex flex-wrap items-center gap-2">
             {type && (
               <Badge variant={typeVariant(type)} className="capitalize">
                 {type}
@@ -45,10 +45,10 @@ const LogDetailDrawer = ({
                 {event}
               </span>
             )}
-          </DrawerTitle>
-        </DrawerHeader>
-        <ScrollArea className="max-h-[calc(85vh-80px)]">
-          <div className="grid gap-3 p-6 sm:grid-cols-2">
+          </SheetTitle>
+        </SheetHeader>
+        <ScrollArea className="flex-1">
+          <div className="grid gap-3 p-6">
             {entries.map(([key, value]) => {
               const displayValue =
                 value === null || value === undefined
@@ -79,8 +79,8 @@ const LogDetailDrawer = ({
             })}
           </div>
         </ScrollArea>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   )
 }
 

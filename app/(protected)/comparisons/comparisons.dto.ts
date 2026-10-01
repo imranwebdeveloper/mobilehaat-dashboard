@@ -56,6 +56,7 @@ export const comparisonSchema = () => {
     faqs: z.array(faqSchema).optional(),
     scores: scoresSchema.optional(),
     key_differences: z.array(keyDifferenceSchema).max(6).optional(),
+    author: z.string().optional(),
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     analysisId: z.string().optional(),

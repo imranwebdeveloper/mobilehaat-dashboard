@@ -61,6 +61,7 @@ export interface IComparison {
   faqs?: ComparisonFaq[]
   scores?: ComparisonScores
   key_differences?: ComparisonKeyDifference[]
+  author?: string | { _id?: string; name?: string }
   meta_title?: string
   meta_description?: string
   analysisId?: string

@@ -23,6 +23,7 @@ const defaultValues: ComparisonFormValues = {
   slug: "",
   phones: [],
   thumbnail: "",
+  author: "",
   intro: "",
   verdict: "",
   meta_title: "",
@@ -45,6 +46,7 @@ export const useCustomForm = () => {
   const isEdit = !!itemId
   const [phones, setPhones] = useState<SelectOption[]>([])
   const [thumbnail, setThumbnail] = useState<IMedia | undefined>()
+  const [authorOption, setAuthorOption] = useState<SelectOption | null>(null)
   const [scores, setScores] = useState<ComparisonScores | null>(null)
   const [bestFor, setBestFor] = useState<ComparisonBestFor | null>(null)
   const [faqs, setFaqs] = useState<ComparisonFaq[]>([])
@@ -108,6 +110,10 @@ export const useCustomForm = () => {
             typeof p === "string" ? p : p._id || ""
           ) || [],
         thumbnail: (data.thumbnail as unknown as { _id?: string })?._id || "",
+        author:
+          typeof data.author === "object" && data.author !== null
+            ? (data.author as { _id?: string })._id || ""
+            : (data.author as string) || "",
         intro: data.intro || "",
         verdict: data.verdict || "",
         best_for: data.best_for,
@@ -127,6 +133,10 @@ export const useCustomForm = () => {
       if (data.scores) setScores(data.scores)
       if (data.best_for) setBestFor(data.best_for)
       if (data.faqs) setFaqs(data.faqs)
+      if (data.author && typeof data.author === "object") {
+        const a = data.author as unknown as { _id?: string; name?: string }
+        if (a._id) setAuthorOption({ label: a.name || "Author", value: a._id })
+      }
 
       const phones = data.phones.map((p: IPhone) => ({
         label: p.title,
@@ -252,6 +262,7 @@ export const useCustomForm = () => {
     form.reset(defaultValues)
     setPhones([])
     setThumbnail(undefined)
+    setAuthorOption(null)
     setScores(null)
     setBestFor(null)
     setFaqs([])
@@ -267,6 +278,8 @@ export const useCustomForm = () => {
     setPhones,
     thumbnail,
     setThumbnail,
+    authorOption,
+    setAuthorOption,
     handleBack,
     handleGenerateSlug,
     handleGenerateAi,

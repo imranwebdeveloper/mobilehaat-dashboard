@@ -34,7 +34,7 @@ import {
   Trash2,
 } from "lucide-react"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
-import { AsyncMultiSelect } from "@/components/common/select/AsyncSelect"
+import { AsyncMultiSelect, AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
 import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
 import { MediaPicker } from "../media/MediaPicker"
 import { toast } from "sonner"
@@ -543,6 +543,8 @@ export default function Form() {
     handleGenerateAi,
     isGenerating,
     selectedPhones,
+    authorOption,
+    setAuthorOption,
     faqFields,
     appendFaq,
     removeFaq,
@@ -676,6 +678,30 @@ export default function Form() {
                           field.onChange(values.map((item) => item.value))
                         }}
                         placeholder="Select phones to compare"
+                      />
+                    )}
+                  />
+                </FormFieldWrapper>
+
+                <FormFieldWrapper
+                  label="Author"
+                  error={form.formState.errors.author?.message}
+                >
+                  <Controller
+                    control={form.control}
+                    name="author"
+                    render={({ field }) => (
+                      <AsyncSingleSelect
+                        url="/authors"
+                        labelField="name"
+                        valueField="_id"
+                        searchField="name"
+                        value={authorOption}
+                        onChange={(val) => {
+                          setAuthorOption(val)
+                          field.onChange(val?.value || "")
+                        }}
+                        placeholder="Select author (optional)"
                       />
                     )}
                   />

@@ -47,7 +47,7 @@ const LogDetailDrawer = ({
             )}
           </SheetTitle>
         </SheetHeader>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 overflow-hidden min-h-0">
           <div className="grid gap-3 p-6">
             {entries.map(([key, value]) => {
               const displayValue =

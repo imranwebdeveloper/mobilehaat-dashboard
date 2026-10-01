@@ -20,6 +20,7 @@ export interface IAuthor {
   }
   status: AuthorStatus
   post_count: number
+  compare_count?: number
   created_by: {
     _id: string
     first_name: string

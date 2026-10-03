@@ -1,8 +1,9 @@
-import { login } from "@/store/global.slice"
+import { login, logout } from "@/store/global.slice"
 import { AuthUser } from "@/store/global.type"
 import { RootState } from "@/config/reduxStoreConfig"
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import type { BaseQueryFn, FetchArgs } from "@reduxjs/toolkit/query"
+import { signOut } from "next-auth/react"
 import { reduxTags } from "./reduxTags"
 
 const rawBaseQuery = fetchBaseQuery({
@@ -20,6 +21,18 @@ const rawBaseQuery = fetchBaseQuery({
     return headers
   },
 })
+
+// Guarded: concurrent 401s must trigger exactly one sign-out redirect.
+let isLoggingOut = false
+
+function forceLogout(api: { dispatch: (action: unknown) => void }) {
+  if (isLoggingOut || typeof window === "undefined") return
+  isLoggingOut = true
+  api.dispatch(logout())
+  // Clears the NextAuth session cookie (breaks the reseed loop) and
+  // lands on sign-in. Full navigation also resets RTK Query state.
+  void signOut({ callbackUrl: "/auth/signin" })
+}
 
 const syncSessionCookie = async (
   access_token: string,
@@ -74,7 +87,22 @@ const baseQueryWithReauth: BaseQueryFn<
       )
       void syncSessionCookie(data.access_token, data.refresh_token)
       result = await rawBaseQuery(args, api, extraOptions)
+      // The retry itself came back 401 (tokens rejected again) → log out.
+      if (
+        typeof result.error === "object" &&
+        result.error !== null &&
+        "status" in result.error &&
+        (result.error as { status?: number }).status === 401
+      ) {
+        forceLogout(api)
+      }
+    } else {
+      // Refresh token invalid/expired/consumed → dead session, log out.
+      forceLogout(api)
     }
+  } else if (isUnauthorized) {
+    // 401 with no refresh token available → nothing to recover, log out.
+    forceLogout(api)
   }
 
   return result

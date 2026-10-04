@@ -13,7 +13,6 @@ import { useQueryContext } from "@/hooks/useQueryContext"
 import { usePermission } from "@/hooks/usePermission"
 import { Permissions } from "@/config/permissions"
 
-import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 
@@ -21,6 +20,7 @@ import { EllipsisVerticalIcon } from "lucide-react"
 import StatusBadge from "@/components/common/StatusBadge"
 import { toast } from "sonner"
 import { formatBDT } from "@/lib/utils"
+import { format } from "date-fns"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,11 +34,10 @@ type PhoneRow = {
   id: string
   title: string
   model: string
-  brand: string
-  phoneType: string
   price: string
   rating: string
-  released: string
+  views: number
+  announced: string
   status: string
   createdAt: string
   bd_status?: string
@@ -61,6 +60,13 @@ const getVariantPriceDisplay = (phone: IPhone): string => {
   return `${formatBDT(min)} - ${formatBDT(max)}`
 }
 
+const formatTableDate = (value?: string | Date | null): string => {
+  if (!value) return "-"
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return "-"
+  return format(d, "dd MMM yyyy")
+}
+
 const mapPhonesToTable = (phones: IPhone[]): PhoneRow[] => {
   return phones.map((phone) => {
     const priceDisplay = getVariantPriceDisplay(phone)
@@ -69,17 +75,12 @@ const mapPhonesToTable = (phones: IPhone[]): PhoneRow[] => {
       id: phone._id,
       title: phone.title,
       model: phone.model,
-      brand: phone.brand?.name || "-",
-      phoneType:
-        phone.phone_type?.map((type) => type.replaceAll("_", " ")).join(", ") ||
-        "-",
       price: priceDisplay,
       rating: phone.expert_rating ? phone.expert_rating.toFixed(1) : "-",
-      released: phone.released
-        ? new Date(phone.released).toLocaleDateString()
-        : "TBA",
+      views: phone.views ?? 0,
+      announced: formatTableDate(phone.announced),
       status: phone.status,
-      createdAt: new Date(phone.createdAt || new Date()).toLocaleDateString(),
+      createdAt: formatTableDate(phone.createdAt),
       bd_status: phone.bd_status,
     }
   })
@@ -152,28 +153,10 @@ export const usePhoneTable = () => {
       },
 
       {
-        accessorKey: "brand",
-        header: "Brand",
-        cell: ({ row }) => (
-          <Badge variant="outline">{row.original.brand}</Badge>
-        ),
-      },
-
-      {
         accessorKey: "price",
         header: "Price",
         cell: ({ row }) => (
           <div className="text-sm font-medium">{row.original.price}</div>
-        ),
-      },
-
-      {
-        accessorKey: "phoneType",
-        header: "Type",
-        cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground capitalize">
-            {row.original.phoneType}
-          </span>
         ),
       },
 
@@ -186,11 +169,31 @@ export const usePhoneTable = () => {
       },
 
       {
-        accessorKey: "released",
-        header: "Released",
+        accessorKey: "views",
+        header: "Total Views",
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground">
-            {row.original.released}
+          <span className="text-sm font-medium">
+            {(row.original.views ?? 0).toLocaleString()}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "announced",
+        header: "Announcement",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.announced}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "createdAt",
+        header: "Created At",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.createdAt}
           </span>
         ),
       },

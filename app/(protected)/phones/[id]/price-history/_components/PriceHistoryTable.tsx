@@ -130,7 +130,7 @@ const PriceHistoryTable = ({ phone }: PriceHistoryTableProps) => {
   })
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <h2 className="text-base font-semibold">Price History</h2>
@@ -139,7 +139,7 @@ const PriceHistoryTable = ({ phone }: PriceHistoryTableProps) => {
       </div>
 
       <div className="flex-1 overflow-hidden rounded-lg border bg-background">
-        <Table>
+        <Table className="w-max min-w-full">
           <TableHeader className="sticky top-0 z-10 bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

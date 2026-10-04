@@ -49,6 +49,8 @@ type PostRow = {
   update_status: string
   next_review_at: string
   faq_count: number
+  publishedAt: string
+  scheduledAt: string
   createdAt: string
   updatedAt: string
 }
@@ -71,11 +73,14 @@ const mapPostsToTable = (posts: IPost[]): PostRow[] => {
     type: post.type,
     views: post.view_count,
     update_status: post.update_status || "CURRENT",
-    next_review_at: post.next_review_at
-      ? new Date(post.next_review_at).toLocaleDateString()
-      : "-",
+    next_review_at: formatTableDate(post.next_review_at),
     faq_count: post.faqs?.length || 0,
-    createdAt: new Date(post.createdAt).toLocaleDateString(),
+    publishedAt: formatTableDate(post.published_at),
+    scheduledAt:
+      post.status === "SCHEDULED"
+        ? formatTableDate(post.published_at)
+        : "-",
+    createdAt: formatTableDate(post.createdAt),
     updatedAt: formatTableDate(post.updatedAt),
   }))
 }
@@ -149,16 +154,6 @@ export const usePostTable = () => {
       },
 
       {
-        accessorKey: "next_review_at",
-        header: "Next Review",
-      },
-
-      {
-        accessorKey: "faq_count",
-        header: "FAQs",
-      },
-
-      {
         accessorKey: "views",
         header: "Views",
         cell: ({ row }) => (
@@ -170,8 +165,48 @@ export const usePostTable = () => {
       },
 
       {
+        accessorKey: "publishedAt",
+        header: "Published At",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.publishedAt}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "scheduledAt",
+        header: "Scheduled At",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.scheduledAt}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "next_review_at",
+        header: "Next Review",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.next_review_at}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "faq_count",
+        header: "FAQs",
+      },
+
+      {
         accessorKey: "createdAt",
         header: "Created At",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.createdAt}
+          </span>
+        ),
       },
 
       {

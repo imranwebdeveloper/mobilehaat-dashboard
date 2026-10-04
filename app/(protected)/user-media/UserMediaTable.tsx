@@ -93,7 +93,7 @@ export default function UserMediaTable() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 sm:max-w-xs">
@@ -142,7 +142,7 @@ export default function UserMediaTable() {
 
       {/* Table */}
       <div className="flex-1 overflow-hidden rounded-lg border bg-background">
-        <Table>
+        <Table className="w-max min-w-full">
           <TableHeader className="sticky top-0 z-10 bg-muted">
             <TableRow>
               <TableHead className="w-12">

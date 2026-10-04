@@ -31,12 +31,12 @@ const PermissionTable = ({ fullDetails }: { fullDetails?: boolean }) => {
   } = useUserPermissionsTable(userId)
 
   return (
-    <div className="flex flex-1 flex-col gap-4">
+    <div className="flex min-w-0 flex-1 flex-col gap-4">
       <UserInfo user={userData} showFullDetails={fullDetails} />
       <UserTableHeader />
       <div className="flex-1">
         <div className="overflow-hidden rounded-lg border bg-background">
-          <Table>
+          <Table className="w-max min-w-full">
             <TableHeader className="sticky top-0 z-10 bg-muted">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>

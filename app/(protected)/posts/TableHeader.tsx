@@ -22,7 +22,7 @@ const TableHeader = () => {
 
   return (
     <div>
-      <div className="mb-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="mb-4 flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:justify-between">
         <div className="relative w-full md:w-72">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -41,7 +41,7 @@ const TableHeader = () => {
           />
         </div>
 
-        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+        <div className="flex flex-col flex-wrap gap-2 md:flex-row md:items-center">
           <Select
             value={query?.status || "all"}
             onValueChange={(value) => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { Controller } from "react-hook-form"
+import { Controller, useFieldArray } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
@@ -15,13 +15,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { PostStatus, PostType } from "./posts.type"
+import { PostStatus, PostType, PostUpdateStatus } from "./posts.type"
 import { AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
+import { PlusIcon, TrashIcon } from "lucide-react"
 
 export default function PostForm() {
   const {
@@ -44,6 +45,16 @@ export default function PostForm() {
   const metaTitle = form.watch("meta_title") || ""
   const metaDescription = form.watch("meta_description") || ""
   const status = form.watch("status")
+  const updateStatus = form.watch("update_status")
+
+  const {
+    fields: faqFields,
+    append: faqAppend,
+    remove: faqRemove,
+  } = useFieldArray({
+    control: form.control,
+    name: "faqs",
+  })
 
   if (isFetching) {
     return <FullWidthLoading />
@@ -179,6 +190,92 @@ export default function PostForm() {
                   onChange={(content) => form.setValue("content", content)}
                 />
               </div>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>FAQs ({faqFields.length})</CardTitle>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => faqAppend({ question: "", answer: "" })}
+                    >
+                      <PlusIcon className="mr-2 h-4 w-4" />
+                      Add FAQ
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {faqFields.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No FAQs yet. Click &quot;Add FAQ&quot; to create one.
+                    </p>
+                  )}
+
+                  {faqFields.map((field, index) => (
+                    <Card
+                      key={field.id}
+                      className="relative overflow-hidden border-l-4 border-l-orange-400"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10"
+                        onClick={() => faqRemove(index)}
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </Button>
+                      <CardHeader className="bg-muted/30 py-2">
+                        <CardTitle className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
+                          FAQ #{index + 1}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3 pt-4">
+                        <FormFieldWrapper
+                          label="Question"
+                          error={
+                            form.formState.errors.faqs?.[index]?.question
+                              ?.message
+                          }
+                        >
+                          <Controller
+                            control={form.control}
+                            name={`faqs.${index}.question`}
+                            render={({ field }) => (
+                              <Input
+                                {...field}
+                                value={field.value || ""}
+                                placeholder="Enter FAQ question"
+                              />
+                            )}
+                          />
+                        </FormFieldWrapper>
+
+                        <FormFieldWrapper
+                          label="Answer"
+                          error={
+                            form.formState.errors.faqs?.[index]?.answer?.message
+                          }
+                        >
+                          <Controller
+                            control={form.control}
+                            name={`faqs.${index}.answer`}
+                            render={({ field }) => (
+                              <Textarea
+                                {...field}
+                                value={field.value || ""}
+                                placeholder="Enter FAQ answer"
+                                rows={3}
+                              />
+                            )}
+                          />
+                        </FormFieldWrapper>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
 
             <div className="w-full space-y-4 lg:w-sm">
@@ -361,6 +458,90 @@ export default function PostForm() {
                       Mark as Featured
                     </label>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Update Monitoring</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormFieldWrapper
+                    label="Freshness"
+                    error={form.formState.errors.update_status?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="update_status"
+                      render={({ field }) => (
+                        <Select
+                          value={field.value}
+                          onValueChange={(value) => {
+                            if (value) {
+                              field.onChange(value)
+                            }
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select freshness" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={PostUpdateStatus.CURRENT}>
+                              Current
+                            </SelectItem>
+                            <SelectItem value={PostUpdateStatus.MONITOR}>
+                              Monitor
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </FormFieldWrapper>
+
+                  <FormFieldWrapper
+                    label="Last Reviewed At"
+                    error={form.formState.errors.last_reviewed_at?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="last_reviewed_at"
+                      render={({ field }) => (
+                        <Input
+                          {...field}
+                          value={field.value || ""}
+                          type="datetime-local"
+                          className="w-full"
+                        />
+                      )}
+                    />
+                  </FormFieldWrapper>
+
+                  {updateStatus === PostUpdateStatus.MONITOR && (
+                    <FormFieldWrapper
+                      label="Next Review At"
+                      required
+                      error={form.formState.errors.next_review_at?.message}
+                    >
+                      <Controller
+                        control={form.control}
+                        name="next_review_at"
+                        render={({ field }) => (
+                          <Input
+                            {...field}
+                            value={field.value || ""}
+                            type="datetime-local"
+                            className="w-full"
+                          />
+                        )}
+                      />
+                    </FormFieldWrapper>
+                  )}
+
+                  <p className="text-xs text-muted-foreground">
+                    {updateStatus === PostUpdateStatus.MONITOR
+                      ? "This article may change over time and should be reviewed again at the next review date."
+                      : "This article is considered factually up to date."}
+                  </p>
                 </CardContent>
               </Card>
             </div>

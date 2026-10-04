@@ -15,6 +15,11 @@ export enum PostType {
   PAGE = "PAGE",
 }
 
+export enum PostUpdateStatus {
+  CURRENT = "CURRENT",
+  MONITOR = "MONITOR",
+}
+
 export interface IPost {
   _id: string
   title: string
@@ -33,6 +38,13 @@ export interface IPost {
   is_featured?: boolean
   view_count: number
   published_at?: string
+  update_status?: PostUpdateStatus
+  last_reviewed_at?: string | null
+  next_review_at?: string | null
+  faqs?: Array<{
+    question: string
+    answer: string
+  }>
   created_by: User
   updated_by?: User
   createdAt: string

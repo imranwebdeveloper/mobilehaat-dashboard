@@ -27,6 +27,8 @@ const statusClassMap: Record<string, string> = {
   DRAFT: "bg-gray-400 text-white",
   PUBLISHED: "bg-green-600 text-white",
   ARCHIVED: "bg-gray-600 text-white",
+  CURRENT: "bg-emerald-500 text-white",
+  MONITOR: "bg-amber-500 text-black",
 
   // Workflow
   NEW: "bg-blue-500 text-white",

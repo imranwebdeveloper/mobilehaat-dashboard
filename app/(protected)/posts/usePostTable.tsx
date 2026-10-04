@@ -43,6 +43,9 @@ type PostRow = {
   status: string
   type: string
   views: number
+  update_status: string
+  next_review_at: string
+  faq_count: number
   createdAt: string
 }
 
@@ -56,6 +59,11 @@ const mapPostsToTable = (posts: IPost[]): PostRow[] => {
     status: post.status,
     type: post.type,
     views: post.view_count,
+    update_status: post.update_status || "CURRENT",
+    next_review_at: post.next_review_at
+      ? new Date(post.next_review_at).toLocaleDateString()
+      : "-",
+    faq_count: post.faqs?.length || 0,
     createdAt: new Date(post.createdAt).toLocaleDateString(),
   }))
 }
@@ -118,6 +126,24 @@ export const usePostTable = () => {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+
+      {
+        accessorKey: "update_status",
+        header: "Freshness",
+        cell: ({ row }) => (
+          <StatusBadge status={row.original.update_status} />
+        ),
+      },
+
+      {
+        accessorKey: "next_review_at",
+        header: "Next Review",
+      },
+
+      {
+        accessorKey: "faq_count",
+        header: "FAQs",
       },
 
       {

@@ -12,7 +12,7 @@ import {
   postApi,
 } from "./posts.api"
 import { IMedia } from "../media/media.type"
-import { PostStatus, PostType } from "./posts.type"
+import { PostStatus, PostType, PostUpdateStatus } from "./posts.type"
 import { SelectOption } from "@/components/common/select/AsyncSelect"
 import { slugify } from "@/lib/utils"
 import { toDateTimeLocal } from "@/lib/date"
@@ -31,6 +31,10 @@ const defaultValues: PostFormValues = {
   meta_description: "",
   slug: "",
   published_at: "",
+  update_status: PostUpdateStatus.CURRENT,
+  last_reviewed_at: "",
+  next_review_at: "",
+  faqs: [],
 }
 
 export const usePostForm = () => {
@@ -55,6 +59,7 @@ export const usePostForm = () => {
 
   const titleValue = form.watch("title")
   const statusValue = form.watch("status")
+  const updateStatusValue = form.watch("update_status")
 
   const handleGenerateSlug = () => {
     const slug = slugify(form.getValues("title"))
@@ -75,6 +80,13 @@ export const usePostForm = () => {
       form.setValue("published_at", "")
     }
   }, [statusValue, form])
+
+  // A CURRENT article needs no scheduled review
+  useEffect(() => {
+    if (updateStatusValue !== PostUpdateStatus.MONITOR) {
+      form.setValue("next_review_at", "")
+    }
+  }, [updateStatusValue, form])
 
   useEffect(() => {
     if (isEdit && itemId) {
@@ -98,6 +110,12 @@ export const usePostForm = () => {
         meta_title: data.meta_title || "",
         meta_description: data.meta_description || "",
         slug: data.slug || "",
+        update_status: data.update_status || PostUpdateStatus.CURRENT,
+        last_reviewed_at: toDateTimeLocal(
+          data.last_reviewed_at || undefined
+        ),
+        next_review_at: toDateTimeLocal(data.next_review_at || undefined),
+        faqs: data.faqs || [],
       })
 
       form.setValue("published_at", toDateTimeLocal(data.published_at))
@@ -124,6 +142,9 @@ export const usePostForm = () => {
     try {
       const payload = {
         ...data,
+        last_reviewed_at: data.last_reviewed_at || undefined,
+        next_review_at: data.next_review_at || undefined,
+        published_at: data.published_at || undefined,
         thumbnail: thumbnail?._id ?? undefined,
         category: category?.value || data.category,
         author: author?.value || data.author,

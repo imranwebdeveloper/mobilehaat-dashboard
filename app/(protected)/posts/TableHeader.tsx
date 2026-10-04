@@ -62,6 +62,24 @@ const TableHeader = () => {
             </SelectContent>
           </Select>
 
+          <Select
+            value={query?.update_status || "all"}
+            onValueChange={(value) => {
+              setQuery({
+                update_status: value === "all" ? undefined : value,
+              })
+            }}
+          >
+            <SelectTrigger className="w-40 bg-background">
+              <SelectValue placeholder="Freshness" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Freshness</SelectItem>
+              <SelectItem value="CURRENT">Current</SelectItem>
+              <SelectItem value="MONITOR">Monitor</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Permission permission={Permissions.POST_CREATE}>
             <Button onClick={() => router.push("/posts/create")}>
               <Plus className="mr-1 h-5 w-5" /> Add Post

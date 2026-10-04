@@ -1,5 +1,5 @@
 import z from "zod"
-import { PostStatus, PostType } from "./posts.type"
+import { PostStatus, PostType, PostUpdateStatus } from "./posts.type"
 
 export const postSchema = (_isEdit?: boolean) => {
   void _isEdit
@@ -18,6 +18,17 @@ export const postSchema = (_isEdit?: boolean) => {
     meta_keywords: z.string().max(200).optional(),
     is_featured: z.boolean().default(false),
     published_at: z.string().optional().or(z.literal("")),
+    update_status: z.nativeEnum(PostUpdateStatus).default(PostUpdateStatus.CURRENT),
+    last_reviewed_at: z.string().optional().or(z.literal("")),
+    next_review_at: z.string().optional().or(z.literal("")),
+    faqs: z
+      .array(
+        z.object({
+          question: z.string().min(1, "Question is required"),
+          answer: z.string().min(1, "Answer is required"),
+        })
+      )
+      .optional(),
     slug: z
       .string()
       .min(1, "Slug is required")

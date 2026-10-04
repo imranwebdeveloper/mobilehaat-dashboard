@@ -40,6 +40,7 @@ type PhoneRow = {
   announced: string
   status: string
   createdAt: string
+  updatedAt: string
   bd_status?: string
 }
 
@@ -81,6 +82,7 @@ const mapPhonesToTable = (phones: IPhone[]): PhoneRow[] => {
       announced: formatTableDate(phone.announced),
       status: phone.status,
       createdAt: formatTableDate(phone.createdAt),
+      updatedAt: formatTableDate(phone.updatedAt),
       bd_status: phone.bd_status,
     }
   })
@@ -194,6 +196,16 @@ export const usePhoneTable = () => {
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground whitespace-nowrap">
             {row.original.createdAt}
+          </span>
+        ),
+      },
+
+      {
+        accessorKey: "updatedAt",
+        header: "Last Update",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.updatedAt}
           </span>
         ),
       },

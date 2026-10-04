@@ -26,6 +26,8 @@ import {
 
 import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-react"
 
+import { format } from "date-fns"
+
 import StatusBadge from "@/components/common/StatusBadge"
 
 type ComparisonRow = {
@@ -34,7 +36,16 @@ type ComparisonRow = {
   slug: string
   status: string
   phone_count: number
+  views: number
   createdAt: string
+  updatedAt: string
+}
+
+const formatTableDate = (value?: string | Date | null): string => {
+  if (!value) return "N/A"
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return "N/A"
+  return format(d, "dd MMM yyyy")
 }
 
 const mapComparisonsToTable = (comparisons: IComparison[]): ComparisonRow[] => {
@@ -44,9 +55,9 @@ const mapComparisonsToTable = (comparisons: IComparison[]): ComparisonRow[] => {
     slug: comparison.slug,
     status: comparison.status,
     phone_count: comparison.phones?.length || 0,
-    createdAt: comparison.createdAt
-      ? new Date(comparison.createdAt).toLocaleDateString()
-      : "N/A",
+    views: comparison.view_count ?? 0,
+    createdAt: formatTableDate(comparison.createdAt),
+    updatedAt: formatTableDate(comparison.updatedAt),
   }))
 }
 
@@ -113,11 +124,29 @@ export const useComparisonTable = () => {
         ),
       },
       {
+        accessorKey: "views",
+        header: "Total Views",
+        cell: ({ row }) => (
+          <span className="text-sm font-medium">
+            {(row.original.views ?? 0).toLocaleString()}
+          </span>
+        ),
+      },
+      {
         accessorKey: "createdAt",
         header: "Created At",
         cell: ({ row }) => (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
             {row.original.createdAt}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "updatedAt",
+        header: "Last Update",
+        cell: ({ row }) => (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.updatedAt}
           </div>
         ),
       },
@@ -139,7 +168,7 @@ export const useComparisonTable = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View on site
+                  Public View
                   <ExternalLinkIcon className="ml-auto size-4" />
                 </a>
               </DropdownMenuItem>

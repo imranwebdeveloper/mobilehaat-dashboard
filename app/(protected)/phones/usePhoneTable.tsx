@@ -16,7 +16,7 @@ import { Permissions } from "@/config/permissions"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 
-import { EllipsisVerticalIcon } from "lucide-react"
+import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-react"
 import StatusBadge from "@/components/common/StatusBadge"
 import { toast } from "sonner"
 import { formatBDT } from "@/lib/utils"
@@ -34,6 +34,7 @@ type PhoneRow = {
   id: string
   title: string
   model: string
+  slug: string
   price: string
   rating: string
   views: number
@@ -76,6 +77,7 @@ const mapPhonesToTable = (phones: IPhone[]): PhoneRow[] => {
       id: phone._id,
       title: phone.title,
       model: phone.model,
+      slug: phone.slug,
       price: priceDisplay,
       rating: phone.expert_rating ? phone.expert_rating.toFixed(1) : "-",
       views: phone.views ?? 0,
@@ -236,6 +238,17 @@ export const usePhoneTable = () => {
               </DropdownMenuTrigger>
 
               <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_FRONTEND_URL ?? "http://localhost:3001"}/mobiles/${row.original.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Public View
+                    <ExternalLinkIcon className="ml-auto size-4" />
+                  </a>
+                </DropdownMenuItem>
+
                 <DropdownMenuItem
                   onClick={() => {
                     router.push(`/phones/${row.original.id}`)

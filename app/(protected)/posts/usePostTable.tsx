@@ -27,12 +27,15 @@ import {
 
 import {
   EllipsisVerticalIcon,
+  ExternalLinkIcon,
   EyeIcon,
   PencilIcon,
   TrashIcon,
 } from "lucide-react"
 
 import StatusBadge from "@/components/common/StatusBadge"
+
+import { format } from "date-fns"
 
 type PostRow = {
   id: string
@@ -47,6 +50,14 @@ type PostRow = {
   next_review_at: string
   faq_count: number
   createdAt: string
+  updatedAt: string
+}
+
+const formatTableDate = (value?: string | Date | null): string => {
+  if (!value) return "-"
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return "-"
+  return format(d, "dd MMM yyyy")
 }
 
 const mapPostsToTable = (posts: IPost[]): PostRow[] => {
@@ -65,6 +76,7 @@ const mapPostsToTable = (posts: IPost[]): PostRow[] => {
       : "-",
     faq_count: post.faqs?.length || 0,
     createdAt: new Date(post.createdAt).toLocaleDateString(),
+    updatedAt: formatTableDate(post.updatedAt),
   }))
 }
 
@@ -163,6 +175,16 @@ export const usePostTable = () => {
       },
 
       {
+        accessorKey: "updatedAt",
+        header: "Last Update",
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.updatedAt}
+          </span>
+        ),
+      },
+
+      {
         id: "actions",
         header: "Actions",
         cell: ({ row }) => (
@@ -174,6 +196,17 @@ export const usePostTable = () => {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <a
+                  href={`${process.env.NEXT_PUBLIC_FRONTEND_URL ?? "http://localhost:3001"}/blog/${row.original.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Public View
+                  <ExternalLinkIcon className="ml-auto size-4" />
+                </a>
+              </DropdownMenuItem>
+
               {hasPermission(Permissions.POST_UPDATE) && (
                 <DropdownMenuItem
                   onClick={() => router.push(`/posts/${row.original.id}/edit`)}

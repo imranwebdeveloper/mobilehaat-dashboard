@@ -66,6 +66,7 @@ export interface IComparison {
   meta_description?: string
   analysisId?: string
   status: ComparisonStatus
+  view_count?: number
   created_by?: string
   updated_by?: string
   createdAt?: string

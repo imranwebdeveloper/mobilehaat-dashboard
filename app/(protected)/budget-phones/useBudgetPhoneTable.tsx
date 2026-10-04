@@ -24,7 +24,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-import { EllipsisVerticalIcon } from "lucide-react"
+import { EllipsisVerticalIcon, ExternalLinkIcon } from "lucide-react"
+
+import { format } from "date-fns"
 
 import StatusBadge from "@/components/common/StatusBadge"
 
@@ -37,7 +39,16 @@ type BudgetPhoneRow = {
   max_price: number
   status: string
   phone_count: number
+  views: number
   createdAt: string
+  updatedAt: string
+}
+
+const formatTableDate = (value?: string | Date | null): string => {
+  if (!value) return "-"
+  const d = new Date(value)
+  if (isNaN(d.getTime())) return "-"
+  return format(d, "dd MMM yyyy")
 }
 
 const mapBudgetPhonesToTable = (
@@ -53,7 +64,9 @@ const mapBudgetPhonesToTable = (
     status:
       budgetPhone.status === BudgetPhoneStatus.ACTIVE ? "Active" : "Inactive",
     phone_count: budgetPhone.rankings?.length || 0,
+    views: budgetPhone.views_count ?? 0,
     createdAt: new Date(budgetPhone.createdAt!).toLocaleDateString(),
+    updatedAt: formatTableDate(budgetPhone.updatedAt),
   }))
 }
 
@@ -146,11 +159,29 @@ export const useBudgetPhoneTable = () => {
         ),
       },
       {
+        accessorKey: "views",
+        header: "Total Views",
+        cell: ({ row }) => (
+          <span className="text-sm font-medium">
+            {(row.original.views ?? 0).toLocaleString()}
+          </span>
+        ),
+      },
+      {
         accessorKey: "createdAt",
         header: "Created At",
         cell: ({ row }) => (
           <div className="text-sm text-muted-foreground">
             {row.original.createdAt}
+          </div>
+        ),
+      },
+      {
+        accessorKey: "updatedAt",
+        header: "Last Update",
+        cell: ({ row }) => (
+          <div className="text-sm text-muted-foreground whitespace-nowrap">
+            {row.original.updatedAt}
           </div>
         ),
       },
@@ -166,6 +197,17 @@ export const useBudgetPhoneTable = () => {
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <a
+                  href={`${process.env.NEXT_PUBLIC_FRONTEND_URL ?? "http://localhost:3001"}/budget-phones/${row.original.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Public View
+                  <ExternalLinkIcon className="ml-auto size-4" />
+                </a>
+              </DropdownMenuItem>
+
               {hasPermission(Permissions.BUDGET_PHONE_UPDATE) && (
                 <DropdownMenuItem
                   onClick={() =>

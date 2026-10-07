@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState } from "react"
 import { Controller, useFieldArray } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,18 +8,13 @@ import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
 import { useCustomForm } from "./useCustomForm"
 import { BudgetPhoneStatus } from "./budget-phones.type"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, TrashIcon, Save, X, Sparkles } from "lucide-react"
+import { PlusIcon, TrashIcon, Save, X } from "lucide-react"
 import { AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediaPicker } from "../media/MediaPicker"
 import { handleNumberInput } from "@/lib/utils"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
 import SingleSelect from "@/components/common/select/SingleSelect"
-import AiGeneratePanel from "./ai/AiGeneratePanel"
-import { BudgetPhoneFormDraft } from "./ai/ai.types"
-import { cn } from "@/lib/utils"
-
-type TabType = "manual" | "ai"
 
 export default function Form() {
   const {
@@ -49,86 +43,12 @@ export default function Form() {
     name: "faq",
   })
 
-  const [activeTab, setActiveTab] = useState<TabType>("manual")
-
   if (isFetching) {
     return <FullWidthLoading />
   }
 
-  const handleAiFillForm = (draft: BudgetPhoneFormDraft) => {
-    form.setValue("title", draft.title, { shouldValidate: true })
-    if (draft.slug) {
-      form.setValue("slug", draft.slug, { shouldValidate: true })
-    }
-    form.setValue("description", draft.description, { shouldValidate: true })
-    form.setValue("meta_title", draft.meta_title, { shouldValidate: true })
-    form.setValue("meta_description", draft.meta_description, {
-      shouldValidate: true,
-    })
-    form.setValue("meta_keywords", draft.meta_keywords, {
-      shouldValidate: true,
-    })
-    form.setValue("min_price", draft.min_price, { shouldValidate: true })
-    form.setValue("max_price", draft.max_price, { shouldValidate: true })
-
-    form.setValue(
-      "rankings",
-      draft.rankings.map((r) => ({
-        rank: r.rank,
-        phone_id: r.phone_id,
-        verdict: r.verdict,
-        label: r.label || "",
-      })),
-      { shouldValidate: true }
-    )
-
-    if (draft.faq && draft.faq.length > 0) {
-      form.setValue(
-        "faq",
-        draft.faq.map((f) => ({
-          question: f.question,
-          answer: f.answer,
-        })),
-        { shouldValidate: true }
-      )
-    }
-
-    setActiveTab("manual")
-  }
-
   return (
     <div className="w-full px-6 py-4">
-      <div className="mb-4 flex gap-1 rounded-lg border bg-muted p-1">
-        <button
-          type="button"
-          className={cn(
-            "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            activeTab === "manual"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-          onClick={() => setActiveTab("manual")}
-        >
-          Manual Entry
-        </button>
-        <button
-          type="button"
-          className={cn(
-            "flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors",
-            activeTab === "ai"
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-          onClick={() => setActiveTab("ai")}
-        >
-          <Sparkles className="mr-2 inline h-4 w-4" />
-          AI Generate
-        </button>
-      </div>
-
-      {activeTab === "ai" && <AiGeneratePanel onFillForm={handleAiFillForm} />}
-
-      {activeTab === "manual" && (
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-4 lg:flex-row">
             <div className="flex-1 space-y-6">
@@ -595,7 +515,6 @@ export default function Form() {
             </div>
           </div>
         </form>
-      )}
     </div>
   )
 }

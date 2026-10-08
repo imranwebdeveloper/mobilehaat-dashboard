@@ -1,5 +1,5 @@
 import z from "zod"
-import { BudgetPhoneStatus } from "./budget-phones.type"
+import { BudgetPhoneBestFor, BudgetPhoneStatus } from "./budget-phones.type"
 
 export const budgetPhoneSchema = () => {
   return z.object({
@@ -9,6 +9,7 @@ export const budgetPhoneSchema = () => {
     disclaimer: z.string().optional(),
     key_differences: z.string().optional(),
     author: z.string().min(1, "Author is required"),
+    best_for: z.array(z.nativeEnum(BudgetPhoneBestFor)).optional(),
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     meta_keywords: z.string().optional(),

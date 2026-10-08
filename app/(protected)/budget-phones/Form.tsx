@@ -12,8 +12,13 @@ import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
 import { useCustomForm } from "./useCustomForm"
 import { BudgetPhoneStatus } from "./budget-phones.type"
+import {
+  BUDGET_PHONE_BEST_FOR_LABELS,
+  BudgetPhoneBestFor,
+} from "./budget-phones.type"
 import type { BudgetPhoneFormValues } from "./budget-phones.dto"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   PlusIcon,
   TrashIcon,
@@ -422,6 +427,49 @@ export default function Form() {
                           placeholder="Optional key-differences summary..."
                         />
                       )}
+                    />
+                  </FormFieldWrapper>
+
+                  <FormFieldWrapper
+                    label="Best For"
+                    error={form.formState.errors.best_for?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="best_for"
+                      render={({ field }) => {
+                        const selected = field.value || []
+                        return (
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(BudgetPhoneBestFor).map((value) => {
+                              const checked = selected.includes(value)
+                              return (
+                                <label
+                                  key={value}
+                                  className={cn(
+                                    "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
+                                    checked
+                                      ? "border-primary bg-primary/10 font-medium text-primary"
+                                      : "text-muted-foreground hover:border-slate-300 hover:text-foreground"
+                                  )}
+                                >
+                                  <Checkbox
+                                    checked={checked}
+                                    onCheckedChange={(v) =>
+                                      field.onChange(
+                                        v
+                                          ? [...selected, value]
+                                          : selected.filter((s) => s !== value)
+                                      )
+                                    }
+                                  />
+                                  {BUDGET_PHONE_BEST_FOR_LABELS[value]}
+                                </label>
+                              )
+                            })}
+                          </div>
+                        )
+                      }}
                     />
                   </FormFieldWrapper>
                 </CardContent>

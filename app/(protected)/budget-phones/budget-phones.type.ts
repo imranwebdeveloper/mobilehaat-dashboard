@@ -1,4 +1,5 @@
 import { IPhone } from "../phones/phones.type"
+import { IAuthor } from "../authors/authors.type"
 
 export enum BudgetPhoneStatus {
   ACTIVE = "ACTIVE",
@@ -9,7 +10,10 @@ export interface IBudgetPhone {
   _id?: string
   title: string
   slug: string
-  description: string
+  intro: string
+  disclaimer?: string
+  key_differences?: string
+  author: string | IAuthor
   meta_title?: string
   meta_description?: string
   meta_keywords?: string
@@ -21,7 +25,7 @@ export interface IBudgetPhone {
   rankings?: Array<{
     rank: number
     phone: IPhone
-    verdict?: string
+    content: string
   }>
   faq?: Array<{
     question: string

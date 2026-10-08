@@ -34,7 +34,6 @@ type BudgetPhoneRow = {
   id: string
   title: string
   slug: string
-  description: string
   min_price: number
   max_price: number
   status: string
@@ -54,20 +53,23 @@ const formatTableDate = (value?: string | Date | null): string => {
 const mapBudgetPhonesToTable = (
   budgetPhones: IBudgetPhone[]
 ): BudgetPhoneRow[] => {
-  return budgetPhones.map((budgetPhone) => ({
-    id: budgetPhone._id!,
-    title: budgetPhone.title,
-    slug: budgetPhone.slug,
-    description: budgetPhone.description?.substring(0, 60) + "..." || "",
-    min_price: budgetPhone.min_price || 0,
-    max_price: budgetPhone.max_price || 0,
-    status:
-      budgetPhone.status === BudgetPhoneStatus.ACTIVE ? "Active" : "Inactive",
-    phone_count: budgetPhone.rankings?.length || 0,
-    views: budgetPhone.views_count ?? 0,
-    createdAt: new Date(budgetPhone.createdAt!).toLocaleDateString(),
-    updatedAt: formatTableDate(budgetPhone.updatedAt),
-  }))
+  return budgetPhones.map((budgetPhone) => {
+    return {
+      id: budgetPhone._id!,
+      title: budgetPhone.title,
+      slug: budgetPhone.slug,
+      min_price: budgetPhone.min_price || 0,
+      max_price: budgetPhone.max_price || 0,
+      status:
+        budgetPhone.status === BudgetPhoneStatus.ACTIVE
+          ? "Active"
+          : "Inactive",
+      phone_count: budgetPhone.rankings?.length || 0,
+      views: budgetPhone.views_count ?? 0,
+      createdAt: new Date(budgetPhone.createdAt!).toLocaleDateString(),
+      updatedAt: formatTableDate(budgetPhone.updatedAt),
+    }
+  })
 }
 
 export const useBudgetPhoneTable = () => {
@@ -120,12 +122,7 @@ export const useBudgetPhoneTable = () => {
         accessorKey: "title",
         header: "Title",
         cell: ({ row }) => (
-          <div className="flex flex-col">
-            <span className="font-medium">{row.original.title}</span>
-            <span className="text-xs text-muted-foreground">
-              {row.original.slug}
-            </span>
-          </div>
+          <span className="font-medium">{row.original.title}</span>
         ),
       },
       {

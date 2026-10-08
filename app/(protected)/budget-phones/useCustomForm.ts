@@ -9,11 +9,15 @@ import { budgetPhoneApi } from "./budget-phones.api"
 import { BudgetPhoneStatus } from "./budget-phones.type"
 import { IMedia } from "../media/media.type"
 import { slugify } from "@/lib/utils"
+import { SelectOption } from "@/components/common/select/AsyncSelect"
 
 const defaultValues: BudgetPhoneFormValues = {
   title: "",
   slug: "",
-  description: "",
+  intro: "",
+  disclaimer: "",
+  key_differences: "",
+  author: "",
   meta_title: "",
   meta_description: "",
   meta_keywords: "",
@@ -35,10 +39,19 @@ type ApiError = {
 export const useCustomForm = () => {
   const router = useRouter()
   const params = useParams()
-  const [thumbnail, setThumbnail] = useState<IMedia | null>(null)
 
   const itemId = params?.id as string
   const isEdit = !!itemId
+  // Selections made by the user in this session, tagged with the doc they
+  // belong to so switching docs never shows a stale selection.
+  const [authorPick, setAuthorPick] = useState<{
+    key: string | undefined
+    option: SelectOption | null
+  } | null>(null)
+  const [thumbPick, setThumbPick] = useState<{
+    key: string | undefined
+    media: IMedia | null
+  } | null>(null)
 
   const [create, createRes] = budgetPhoneApi.useCreateBudgetPhoneMutation()
   const [update, updateRes] = budgetPhoneApi.useUpdateBudgetPhoneMutation()
@@ -51,18 +64,11 @@ export const useCustomForm = () => {
     defaultValues,
   })
 
-  const titleValue = form.watch("title")
-
-  // Auto-generate slug when title changes if slug is empty and not in edit mode
-  useEffect(() => {
-    const currentSlug = form.getValues("slug")
-    if (titleValue && !currentSlug && !isEdit) {
-      form.setValue("slug", slugify(titleValue), { shouldValidate: true })
-    }
-  }, [titleValue, form, isEdit])
-
+  // Slug is fully manual: type anything in the slug field
+  // (e.g. "top mobile under 15k") and Generate converts it
+  // to a clean slug (e.g. "top-mobile-under-15k").
   const handleGenerateSlug = () => {
-    const slug = slugify(form.getValues("title") || "")
+    const slug = slugify(form.getValues("slug") || "")
     form.setValue("slug", slug, { shouldValidate: true })
   }
 
@@ -78,13 +84,20 @@ export const useCustomForm = () => {
       const rankings = data.rankings?.map((r) => ({
         rank: r.rank,
         phone_id: r.phone?._id || "",
-        verdict: r.verdict,
+        content: r.content || "",
         label: r.phone?.title,
       }))
+      const authorId =
+        typeof data.author === "object" && data.author !== null
+          ? data.author._id || ""
+          : data.author || ""
       form.reset({
         title: data.title || "",
         slug: data.slug || "",
-        description: data.description || "",
+        intro: data.intro || "",
+        disclaimer: data.disclaimer || "",
+        key_differences: data.key_differences || "",
+        author: authorId,
         meta_title: data.meta_title || "",
         meta_description: data.meta_description || "",
         meta_keywords: data.meta_keywords || "",
@@ -95,12 +108,47 @@ export const useCustomForm = () => {
         rankings: rankings || [],
         faq: data.faq || [],
       })
-
-      if (data.thumbnail) {
-        setThumbnail(data.thumbnail as any)
-      }
     }
   }, [form, isEdit, getByIdRes.data])
+
+  // Prefer the user's live pick; fall back to the fetched thumbnail.
+  // Derived during render (no effect sync), so refetches never
+  // clobber a selection and doc switches never leak a stale one.
+  const fetchedThumbnail = getByIdRes.data?.data.thumbnail as
+    | IMedia
+    | null
+    | undefined
+  const thumbnail =
+    thumbPick && thumbPick.key === itemId
+      ? thumbPick.media
+      : (fetchedThumbnail ?? null)
+
+  const handleThumbnailPick = (media: IMedia | null) => {
+    setThumbPick({ key: itemId, media })
+    form.setValue("thumbnail", media?._id || null, {
+      shouldValidate: true,
+    })
+  }
+
+  // Prefer the user's live pick; fall back to the fetched author.
+  // Derived during render (no effect sync), so refetches never
+  // clobber a selection and doc switches never leak a stale one.
+  const fetchedAuthor = getByIdRes.data?.data.author
+  let authorOption: SelectOption | null = null
+  if (authorPick && authorPick.key === itemId) {
+    authorOption = authorPick.option
+  } else if (
+    fetchedAuthor &&
+    typeof fetchedAuthor === "object" &&
+    fetchedAuthor._id
+  ) {
+    authorOption = { label: fetchedAuthor.name || "Author", value: fetchedAuthor._id }
+  }
+
+  const handleAuthorPick = (val: SelectOption | null) => {
+    setAuthorPick({ key: itemId, option: val })
+    form.setValue("author", val?.value || "", { shouldValidate: true })
+  }
 
   const onSubmit = async (data: BudgetPhoneFormValues) => {
     try {
@@ -112,7 +160,7 @@ export const useCustomForm = () => {
         rankings: data.rankings?.map((r) => ({
           rank: r.rank,
           phone_id: r.phone_id,
-          verdict: r.verdict,
+          content: r.content,
         })),
         faq: data.faq || [],
       }
@@ -147,6 +195,8 @@ export const useCustomForm = () => {
     handleBack,
     handleGenerateSlug,
     thumbnail,
-    setThumbnail,
+    handleThumbnailPick,
+    authorOption,
+    handleAuthorPick,
   }
 }

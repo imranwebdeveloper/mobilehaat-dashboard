@@ -1,20 +1,272 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { Controller, useFieldArray } from "react-hook-form"
+import { useState } from "react"
+import {
+  Controller,
+  useFieldArray,
+  useWatch,
+  type Control,
+} from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
 import { useCustomForm } from "./useCustomForm"
 import { BudgetPhoneStatus } from "./budget-phones.type"
+import type { BudgetPhoneFormValues } from "./budget-phones.dto"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, TrashIcon, Save, X } from "lucide-react"
+import {
+  PlusIcon,
+  TrashIcon,
+  Save,
+  X,
+  ChevronDown,
+} from "lucide-react"
 import { AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
+import type { SelectOption } from "@/components/common/select/AsyncSelect"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { MediaPicker } from "../media/MediaPicker"
+import type { IMedia } from "../media/media.type"
 import { handleNumberInput } from "@/lib/utils"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
 import SingleSelect from "@/components/common/select/SingleSelect"
+import { SimpleRichText } from "@/components/common/SimpleRichText"
+import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
+import { cn } from "@/lib/utils"
+
+function FaqItem({
+  control,
+  index,
+  onRemove,
+}: {
+  control: Control<BudgetPhoneFormValues>
+  index: number
+  onRemove: () => void
+}) {
+  const question = useWatch({
+    control,
+    name: `faq.${index}.question`,
+  }) as string
+  // New (empty) items start open, existing ones start collapsed.
+  const [open, setOpen] = useState(!question)
+
+  return (
+    <div className="overflow-hidden rounded-md border">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+          {index + 1}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {question?.trim() || (
+              <span className="font-normal text-muted-foreground italic">
+                New question…
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onRemove}
+          className="h-6 w-6 shrink-0 p-0 text-destructive hover:bg-destructive/10"
+        >
+          <TrashIcon className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {open && (
+        <div className="space-y-2 border-t border-input px-3 py-3">
+          <Controller
+            control={control}
+            name={`faq.${index}.question`}
+            render={({ field, fieldState }) => (
+              <>
+                <Input
+                  {...field}
+                  value={(field.value as string) || ""}
+                  placeholder="e.g. ৪০,০০০ টাকার মধ্যে কোন ফোনটি সবচেয়ে ভালো?"
+                  className="text-sm"
+                />
+                {fieldState.error && (
+                  <p className="text-xs text-destructive">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+          <Controller
+            control={control}
+            name={`faq.${index}.answer`}
+            render={({ field, fieldState }) => (
+              <>
+                <SimpleRichText
+                  content={(field.value as string) || ""}
+                  onChange={field.onChange}
+                  placeholder="FAQ answer..."
+                  minHeight={100}
+                />
+                {fieldState.error && (
+                  <p className="text-xs text-destructive">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function RankItem({
+  control,
+  index,
+  phoneLabel,
+  onPhoneChange,
+  onRemove,
+}: {
+  control: Control<BudgetPhoneFormValues>
+  index: number
+  phoneLabel?: string
+  onPhoneChange: (option: SelectOption | null) => void
+  onRemove: () => void
+}) {
+  const phoneId = useWatch({
+    control,
+    name: `rankings.${index}.phone_id`,
+  }) as string
+  const rank = useWatch({
+    control,
+    name: `rankings.${index}.rank`,
+  }) as number
+  // New (phone-less) items start open, existing ones start collapsed.
+  const [open, setOpen] = useState(!phoneId)
+
+  return (
+    <div className="overflow-hidden rounded-md border">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+          {rank || index + 1}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
+            {phoneLabel?.trim() || (
+              <span className="font-normal text-muted-foreground italic">
+                Select phone…
+              </span>
+            )}
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onRemove}
+          className="h-6 w-6 shrink-0 p-0 text-destructive hover:bg-destructive/10"
+        >
+          <TrashIcon className="h-3 w-3" />
+        </Button>
+      </div>
+
+      {open && (
+        <div className="space-y-3 border-t border-input px-3 py-3">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <Controller
+              control={control}
+              name={`rankings.${index}.phone_id`}
+              render={({ fieldState }) => (
+                <div>
+                  <AsyncSingleSelect
+                    url="/phones"
+                    labelField="title"
+                    value={
+                      phoneId
+                        ? { value: phoneId, label: phoneLabel || "" }
+                        : null
+                    }
+                    onChange={onPhoneChange}
+                    placeholder="Search phone..."
+                    searchField="title"
+                    valueField="_id"
+                  />
+                  {fieldState.error && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+            <Controller
+              control={control}
+              name={`rankings.${index}.rank`}
+              render={({ field, fieldState }) => (
+                <div>
+                  <Input
+                    {...field}
+                    type="number"
+                    min={1}
+                    value={(field.value as number) ?? ""}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    placeholder="Rank position"
+                    className="text-sm"
+                  />
+                  {fieldState.error && (
+                    <p className="mt-1 text-xs text-destructive">
+                      {fieldState.error.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            />
+          </div>
+          <Controller
+            control={control}
+            name={`rankings.${index}.content`}
+            render={({ field, fieldState }) => (
+              <>
+                <SimpleRichText
+                  content={(field.value as string) || ""}
+                  onChange={field.onChange}
+                  placeholder="Write the ranking content for this phone..."
+                  minHeight={100}
+                />
+                {fieldState.error && (
+                  <p className="text-xs text-destructive">
+                    {fieldState.error.message}
+                  </p>
+                )}
+              </>
+            )}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function Form() {
   const {
@@ -26,7 +278,9 @@ export default function Form() {
     isFetching,
     handleGenerateSlug,
     thumbnail,
-    setThumbnail,
+    handleThumbnailPick,
+    authorOption,
+    handleAuthorPick,
   } = useCustomForm()
 
   const { fields, append, remove, update } = useFieldArray({
@@ -101,18 +355,71 @@ export default function Form() {
                   </FormFieldWrapper>
 
                   <FormFieldWrapper
-                    label="Description"
+                    label="Intro"
                     required
-                    error={form.formState.errors.description?.message}
+                    error={form.formState.errors.intro?.message}
                   >
                     <Controller
                       control={form.control}
-                      name="description"
+                      name="intro"
                       render={({ field }) => (
                         <Textarea
                           {...field}
-                          placeholder="Description of this budget range..."
+                          placeholder="Intro of this budget range..."
                           rows={5}
+                        />
+                      )}
+                    />
+                  </FormFieldWrapper>
+
+                  <FormFieldWrapper
+                    label="Author"
+                    required
+                    error={form.formState.errors.author?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="author"
+                      render={() => (
+                        <AsyncSingleSelect
+                          url="/authors"
+                          value={authorOption}
+                          onChange={(val) => handleAuthorPick(val)}
+                          placeholder="Select author"
+                        />
+                      )}
+                    />
+                  </FormFieldWrapper>
+
+                  <FormFieldWrapper
+                    label="Disclaimer"
+                    error={form.formState.errors.disclaimer?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="disclaimer"
+                      render={({ field }) => (
+                        <SimpleRichText
+                          content={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="Optional disclaimer note..."
+                        />
+                      )}
+                    />
+                  </FormFieldWrapper>
+
+                  <FormFieldWrapper
+                    label="Key Differences"
+                    error={form.formState.errors.key_differences?.message}
+                  >
+                    <Controller
+                      control={form.control}
+                      name="key_differences"
+                      render={({ field }) => (
+                        <JodiRichTextEditor
+                          content={field.value || ""}
+                          onChange={field.onChange}
+                          placeholder="Optional key-differences summary..."
                         />
                       )}
                     />
@@ -120,137 +427,54 @@ export default function Form() {
                 </CardContent>
               </Card>
 
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">
-                    Ranked Phones ({fields.length})
-                  </h3>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() =>
-                      append({
-                        rank: fields.length + 1,
-                        phone_id: "",
-                        verdict: "",
-                      })
-                    }
-                  >
-                    <PlusIcon className="mr-2 h-4 w-4" />
-                    Add Rank
-                  </Button>
-                </div>
-
-                {fields.map((field, index) => {
-                  const ranking = {
-                    value: field.phone_id,
-                    label: field.label as string,
-                  }
-
-                  return (
-                    <Card
-                      key={field.id}
-                      className="relative overflow-hidden border-l-4 border-l-primary"
+              {/* Ranked Phones */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">
+                      Ranked Phones ({fields.length})
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        append({
+                          rank: fields.length + 1,
+                          phone_id: "",
+                          content: "",
+                        })
+                      }
                     >
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10"
-                        onClick={() => remove(index)}
-                      >
-                        <TrashIcon className="h-4 w-4" />
-                      </Button>
-                      <CardHeader className="bg-muted/30 py-2">
-                        <CardTitle className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                          Rank #{index + 1}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="grid gap-4 pt-4">
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormFieldWrapper
-                            label="Phone"
-                            required
-                            error={
-                              form.formState.errors.rankings?.[index]?.phone_id
-                                ?.message
-                            }
-                          >
-                            <Controller
-                              control={form.control}
-                              name={`rankings.${index}.phone_id`}
-                              render={() => (
-                                <AsyncSingleSelect
-                                  url="/phones"
-                                  labelField="title"
-                                  value={ranking}
-                                  onChange={(val) => {
-                                    if (val) {
-                                      update(index, {
-                                        ...field,
-                                        phone_id: val?.value as string,
-                                        label: val?.label as string,
-                                      })
-                                    }
-                                  }}
-                                  placeholder="Search phone..."
-                                  searchField="title"
-                                  valueField="_id"
-                                />
-                              )}
-                            />
-                          </FormFieldWrapper>
-
-                          <FormFieldWrapper
-                            label="Rank Position"
-                            required
-                            error={
-                              form.formState.errors.rankings?.[index]?.rank
-                                ?.message
-                            }
-                          >
-                            <Controller
-                              control={form.control}
-                              name={`rankings.${index}.rank`}
-                              render={({ field }) => (
-                                <Input
-                                  {...field}
-                                  type="number"
-                                  value={field.value as number}
-                                  onChange={(e) =>
-                                    field.onChange(Number(e.target.value))
-                                  }
-                                />
-                              )}
-                            />
-                          </FormFieldWrapper>
-                        </div>
-
-                        <FormFieldWrapper
-                          label="Verdict"
-                          error={
-                            form.formState.errors.rankings?.[index]?.verdict
-                              ?.message
-                          }
-                        >
-                          <Controller
-                            control={form.control}
-                            name={`rankings.${index}.verdict`}
-                            render={({ field }) => (
-                              <Textarea
-                                {...field}
-                                value={(field.value as string) || ""}
-                                placeholder="এক লাইনে ফোনটির সারসংক্ষেপ লিখুন"
-                                rows={3}
-                              />
-                            )}
-                          />
-                        </FormFieldWrapper>
-                      </CardContent>
-                    </Card>
-                  )
-                })}
-              </div>
+                      <PlusIcon className="mr-1 h-3 w-3" />
+                      Add Rank
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {fields.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      No ranked phones yet. Click &quot;Add Rank&quot; to add
+                      one.
+                    </p>
+                  )}
+                  {fields.map((field, index) => (
+                    <RankItem
+                      key={field.id}
+                      control={form.control}
+                      index={index}
+                      phoneLabel={field.label as string}
+                      onPhoneChange={(val) =>
+                        update(index, {
+                          ...field,
+                          phone_id: val?.value || "",
+                          label: val?.label || "",
+                        })
+                      }
+                      onRemove={() => remove(index)}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader>
@@ -312,83 +536,38 @@ export default function Form() {
               </Card>
 
               {/* FAQ Section */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium">
-                    FAQ ({faqFields.length})
-                  </h3>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() => faqAppend({ question: "", answer: "" })}
-                  >
-                    <PlusIcon className="mr-2 h-4 w-4" />
-                    Add FAQ
-                  </Button>
-                </div>
-
-                {faqFields.map((field, index) => (
-                  <Card
-                    key={field.id}
-                    className="relative overflow-hidden border-l-4 border-l-orange-400"
-                  >
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm">
+                      FAQ ({faqFields.length})
+                    </CardTitle>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-7 w-7 text-destructive hover:bg-destructive/10"
-                      onClick={() => faqRemove(index)}
+                      size="sm"
+                      onClick={() => faqAppend({ question: "", answer: "" })}
                     >
-                      <TrashIcon className="h-4 w-4" />
+                      <PlusIcon className="mr-1 h-3 w-3" />
+                      Add
                     </Button>
-                    <CardHeader className="bg-muted/30 py-2">
-                      <CardTitle className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-                        FAQ #{index + 1}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3 pt-4">
-                      <FormFieldWrapper
-                        label="Question"
-                        error={
-                          form.formState.errors.faq?.[index]?.question?.message
-                        }
-                      >
-                        <Controller
-                          control={form.control}
-                          name={`faq.${index}.question`}
-                          render={({ field }) => (
-                            <Input
-                              {...field}
-                              value={(field.value as string) || ""}
-                              placeholder="e.g. ৪০,০০০ টাকার মধ্যে কোন ফোনটি সবচেয়ে ভালো?"
-                            />
-                          )}
-                        />
-                      </FormFieldWrapper>
-
-                      <FormFieldWrapper
-                        label="Answer"
-                        error={
-                          form.formState.errors.faq?.[index]?.answer?.message
-                        }
-                      >
-                        <Controller
-                          control={form.control}
-                          name={`faq.${index}.answer`}
-                          render={({ field }) => (
-                            <Textarea
-                              {...field}
-                              value={(field.value as string) || ""}
-                              placeholder="FAQ answer..."
-                              rows={3}
-                            />
-                          )}
-                        />
-                      </FormFieldWrapper>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {faqFields.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      No FAQs yet. Click &quot;Add&quot; to create one.
+                    </p>
+                  )}
+                  {faqFields.map((field, index) => (
+                    <FaqItem
+                      key={field.id}
+                      control={form.control}
+                      index={index}
+                      onRemove={() => faqRemove(index)}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
             </div>
 
             <div className="w-full space-y-4 lg:w-[320px]">
@@ -415,10 +594,9 @@ export default function Form() {
                 <CardContent>
                   <MediaPicker
                     value={thumbnail || undefined}
-                    onChange={(media) => {
-                      setThumbnail(media as any)
-                      form.setValue("thumbnail", (media as any)?._id || null)
-                    }}
+                    onChange={(media) =>
+                      handleThumbnailPick((media as IMedia | null) ?? null)
+                    }
                     placeholder="Select thumbnail"
                   />
                 </CardContent>

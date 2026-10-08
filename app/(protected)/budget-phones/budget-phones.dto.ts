@@ -5,7 +5,10 @@ export const budgetPhoneSchema = () => {
   return z.object({
     title: z.string().min(1, "Title is required").max(200),
     slug: z.string().min(1, "Slug is required").max(200).optional(),
-    description: z.string().min(1, "Description is required"),
+    intro: z.string().min(1, "Intro is required"),
+    disclaimer: z.string().optional(),
+    key_differences: z.string().optional(),
+    author: z.string().min(1, "Author is required"),
     meta_title: z.string().optional(),
     meta_description: z.string().optional(),
     meta_keywords: z.string().optional(),
@@ -18,7 +21,7 @@ export const budgetPhoneSchema = () => {
         z.object({
           rank: z.coerce.number().min(1),
           phone_id: z.string().min(1),
-          verdict: z.string().optional(),
+          content: z.string().min(1, "Content is required"),
           label: z.string().optional(),
         })
       )

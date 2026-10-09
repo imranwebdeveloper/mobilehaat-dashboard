@@ -4,6 +4,7 @@ import React, { useRef, useMemo, useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { IMedia } from "@/app/(protected)/media/media.type"
 import { MediaPicker } from "@/app/(protected)/media/MediaPicker"
+import { MarkdownImportDialog } from "./MarkdownImportDialog"
 
 // Dynamic import to avoid SSR issues with Jodit
 const JoditEditor = dynamic(() => import("jodit-react"), {
@@ -27,6 +28,7 @@ export function JodiRichTextEditor({
   const editor = useRef<any>(null)
   /* eslint-enable @typescript-eslint/no-explicit-any */
   const [isMediaOpen, setIsMediaOpen] = useState(false)
+  const [isMarkdownOpen, setIsMarkdownOpen] = useState(false)
 
   const isLoaded = useRef<boolean>(false)
 
@@ -81,6 +83,16 @@ export function JodiRichTextEditor({
     onChange(editor.current.value)
   }
 
+  const handleInsertMarkdown = (html: string, mode: "insert" | "replace") => {
+    if (!editor.current) return
+    if (mode === "replace") {
+      editor.current.value = html
+    } else {
+      editor.current.selection.insertHTML(html)
+    }
+    onChange(editor.current.value)
+  }
+
   // Jodit configuration
   const config = useMemo(
     () => ({
@@ -99,6 +111,14 @@ export function JodiRichTextEditor({
           tooltip: "Insert Media from Gallery",
           exec: () => {
             setIsMediaOpen(true)
+          },
+        },
+        importMarkdown: {
+          name: "importMarkdown",
+          text: "Markdown",
+          tooltip: "Import Markdown (.md) as formatted content",
+          exec: () => {
+            setIsMarkdownOpen(true)
           },
         },
       },
@@ -122,6 +142,7 @@ export function JodiRichTextEditor({
         "paragraph",
         "|",
         "addMedia",
+        "importMarkdown",
         "video",
         "table",
         "link",
@@ -218,6 +239,12 @@ export function JodiRichTextEditor({
         accept="image/*,video/*"
         onChange={handleFileUpload}
       /> */}
+
+      <MarkdownImportDialog
+        open={isMarkdownOpen}
+        onOpenChange={setIsMarkdownOpen}
+        onInsert={handleInsertMarkdown}
+      />
 
       <MediaPicker
         headless={true}

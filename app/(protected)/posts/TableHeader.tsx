@@ -42,6 +42,17 @@ const TableHeader = () => {
         </div>
 
         <div className="flex flex-col flex-wrap gap-2 md:flex-row md:items-center">
+          <Input
+            placeholder="Filter by tag..."
+            value={query?.tag || ""}
+            onChange={(e) =>
+              setQuery({
+                tag: e.target.value.trim() || undefined,
+              })
+            }
+            className="w-full bg-background md:w-44"
+          />
+
           <Select
             value={query?.status || "all"}
             onValueChange={(value) => {

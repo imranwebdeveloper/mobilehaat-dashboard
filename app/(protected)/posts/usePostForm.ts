@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
-import { postSchema, PostFormValues } from "./posts.dto"
+import { postSchema, PostFormValues, normalizePostTags } from "./posts.dto"
 import {
   useCreatePostMutation,
   useUpdatePostMutation,
@@ -106,7 +106,7 @@ export const usePostForm = () => {
         author: data.author?._id || "",
         status: data.status,
         type: data.type,
-        tags: data.tags || [],
+        tags: normalizePostTags(data.tags || []),
         meta_title: data.meta_title || "",
         meta_description: data.meta_description || "",
         slug: data.slug || "",
@@ -142,6 +142,7 @@ export const usePostForm = () => {
     try {
       const payload = {
         ...data,
+        tags: normalizePostTags(data.tags),
         last_reviewed_at: data.last_reviewed_at || undefined,
         next_review_at: data.next_review_at || undefined,
         published_at: data.published_at || undefined,

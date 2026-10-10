@@ -1,6 +1,25 @@
 import z from "zod"
 import { PostStatus, PostType, PostUpdateStatus } from "./posts.type"
 
+export const MAX_POST_TAGS = 10
+export const MAX_POST_TAG_LENGTH = 50
+
+export const normalizePostTags = (value: unknown): string[] => {
+  const list = Array.isArray(value)
+    ? value
+    : typeof value === "string"
+      ? value.split(",")
+      : []
+  return [
+    ...new Set(
+      list
+        .filter((t): t is string => typeof t === "string")
+        .map((t) => t.trim().toLowerCase())
+        .filter((t) => t.length > 0 && t.length <= MAX_POST_TAG_LENGTH)
+    ),
+  ].slice(0, MAX_POST_TAGS)
+}
+
 export const postSchema = (_isEdit?: boolean) => {
   void _isEdit
   return z.object({
@@ -12,7 +31,11 @@ export const postSchema = (_isEdit?: boolean) => {
     author: z.string().min(1, "Author is required"),
     status: z.nativeEnum(PostStatus).default(PostStatus.DRAFT),
     type: z.nativeEnum(PostType).default(PostType.POST),
-    tags: z.array(z.string()).default([]),
+    tags: z
+      .array(z.string())
+      .max(50)
+      .default([])
+      .transform((list) => normalizePostTags(list)),
     meta_title: z.string().max(200).optional(),
     meta_description: z.string().max(500).optional(),
     meta_keywords: z.string().max(200).optional(),

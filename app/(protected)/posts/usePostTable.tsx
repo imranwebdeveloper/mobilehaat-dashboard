@@ -45,6 +45,7 @@ type PostRow = {
   author: string
   status: string
   type: string
+  tags: string[]
   views: number
   update_status: string
   next_review_at: string
@@ -71,6 +72,7 @@ const mapPostsToTable = (posts: IPost[]): PostRow[] => {
     author: post.author?.name || "-",
     status: post.status,
     type: post.type,
+    tags: post.tags || [],
     views: post.view_count,
     update_status: post.update_status || "CURRENT",
     next_review_at: formatTableDate(post.next_review_at),
@@ -143,6 +145,32 @@ export const usePostTable = () => {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => <StatusBadge status={row.original.status} />,
+      },
+
+      {
+        accessorKey: "tags",
+        header: "Tags",
+        cell: ({ row }) => {
+          const tags = row.original.tags || []
+          if (tags.length === 0) {
+            return <span className="text-sm text-muted-foreground">-</span>
+          }
+          const visible = tags.slice(0, 3)
+          return (
+            <div className="flex max-w-[220px] flex-wrap gap-1">
+              {visible.map((tag) => (
+                <Badge key={tag} variant="outline" className="text-xs">
+                  {tag}
+                </Badge>
+              ))}
+              {tags.length > visible.length && (
+                <Badge variant="secondary" className="text-xs">
+                  +{tags.length - visible.length}
+                </Badge>
+              )}
+            </div>
+          )
+        },
       },
 
       {

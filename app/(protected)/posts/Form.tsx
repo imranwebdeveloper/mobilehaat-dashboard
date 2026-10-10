@@ -1,9 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Controller, useFieldArray } from "react-hook-form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import FormFieldWrapper from "@/components/ui/FormFieldWrapper"
+import { Badge } from "@/components/ui/badge"
 import { MediaPicker } from "../media/MediaPicker"
 import { usePostForm } from "./usePostForm"
 import { IMedia } from "../media/media.type"
@@ -22,7 +24,12 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
-import { PlusIcon, TrashIcon } from "lucide-react"
+import { PlusIcon, TrashIcon, XIcon } from "lucide-react"
+import {
+  normalizePostTags,
+  MAX_POST_TAGS,
+  MAX_POST_TAG_LENGTH,
+} from "./posts.dto"
 
 export default function PostForm() {
   const {
@@ -55,6 +62,24 @@ export default function PostForm() {
     control: form.control,
     name: "faqs",
   })
+
+  const tags = form.watch("tags") ?? []
+  const [tagInput, setTagInput] = useState("")
+
+  const addTags = (raw: string) => {
+    if (!raw.split(",").some((p) => p.trim())) return
+    const next = normalizePostTags([...tags, ...raw.split(",")])
+    form.setValue("tags", next, { shouldValidate: true, shouldDirty: true })
+    setTagInput("")
+  }
+
+  const removeTag = (index: number) => {
+    form.setValue(
+      "tags",
+      tags.filter((_, i) => i !== index),
+      { shouldValidate: true, shouldDirty: true }
+    )
+  }
 
   if (isFetching) {
     return <FullWidthLoading />
@@ -458,6 +483,71 @@ export default function PostForm() {
                       Mark as Featured
                     </label>
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tags ({tags.length}/{MAX_POST_TAGS})</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <FormFieldWrapper
+                    label="Add tags"
+                    error={form.formState.errors.tags?.message as string | undefined}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault()
+                            addTags(tagInput)
+                          }
+                        }}
+                        placeholder="Type a tag, press Enter"
+                        maxLength={MAX_POST_TAG_LENGTH}
+                        disabled={tags.length >= MAX_POST_TAGS}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => addTags(tagInput)}
+                        disabled={
+                          tags.length >= MAX_POST_TAGS ||
+                          !tagInput.trim()
+                        }
+                      >
+                        Add
+                      </Button>
+                    </div>
+                  </FormFieldWrapper>
+
+                  {tags.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {tags.map((tag, index) => (
+                        <Badge
+                          key={`${tag}-${index}`}
+                          variant="secondary"
+                          className="flex items-center gap-1 pr-1"
+                        >
+                          <span className="max-w-36 truncate">{tag}</span>
+                          <button
+                            type="button"
+                            aria-label={`Remove tag ${tag}`}
+                            className="rounded-full p-0.5 hover:bg-muted-foreground/20"
+                            onClick={() => removeTag(index)}
+                          >
+                            <XIcon className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No tags yet. Tags are lowercased automatically.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
 

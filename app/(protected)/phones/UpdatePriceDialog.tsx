@@ -1,11 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import type { ChangeEvent } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useUpdateVariantsPriceMutation } from "./priceHistoryApi"
+import { useGetPhoneByIdQuery } from "./phones.api"
+import MetadataGenerateButton from "./MetadataGenerateButton"
+import { buildMetadataSnapshot } from "./metadataSnapshot"
 import { IPhone } from "./phones.type"
 import { PhoneStatus, BDStatus } from "./phones.constant"
 import {
@@ -52,6 +55,9 @@ const updatePricesSchema = z
     status: z.string().default(PhoneStatus.DRAFT),
     bd_status: z.string().default(BDStatus.UNKNOWN),
     reason: z.string().max(500).optional().or(z.literal("")),
+    meta_title: z.string().max(70).optional().or(z.literal("")),
+    meta_description: z.string().max(200).optional().or(z.literal("")),
+    meta_keywords: z.string().max(500).optional().or(z.literal("")),
   })
   .refine(
     (data) =>
@@ -93,6 +99,13 @@ const UpdatePriceDialog = ({
 
   const variants = phone.variants || []
 
+  // The phone table list omits SEO meta fields — load the full phone so the
+  // meta inputs prefill instead of showing empty.
+  const { data: fullPhoneRes } = useGetPhoneByIdQuery(phone._id, {
+    skip: !open,
+  })
+  const fullPhone = fullPhoneRes?.data
+
   const form = useForm<UpdatePricesFormValues>({
     resolver: zodResolver(updatePricesSchema),
     defaultValues: {
@@ -104,8 +117,19 @@ const UpdatePriceDialog = ({
       status: phone.status,
       bd_status: phone.bd_status || BDStatus.UNKNOWN,
       reason: "",
+      meta_title: phone.meta_title || "",
+      meta_description: phone.meta_description || "",
+      meta_keywords: phone.meta_keywords || "",
     },
   })
+
+  useEffect(() => {
+    if (open && fullPhone) {
+      form.setValue("meta_title", fullPhone.meta_title || "")
+      form.setValue("meta_description", fullPhone.meta_description || "")
+      form.setValue("meta_keywords", fullPhone.meta_keywords || "")
+    }
+  }, [open, fullPhone, form])
 
   const handleSubmit = async (values: UpdatePricesFormValues) => {
     try {
@@ -131,12 +155,20 @@ const UpdatePriceDialog = ({
         return
       }
 
+      const trimOrUndefined = (v?: string) => {
+        const t = v?.trim()
+        return t ? t : undefined
+      }
+
       await updateVariantsPrice({
         phoneId: phone._id,
         variants: items,
         status: values.status,
         bd_status: values.bd_status,
         reason: values.reason || undefined,
+        meta_title: trimOrUndefined(values.meta_title),
+        meta_description: trimOrUndefined(values.meta_description),
+        meta_keywords: trimOrUndefined(values.meta_keywords),
       }).unwrap()
 
       toast.success("Prices updated successfully")
@@ -306,6 +338,88 @@ const UpdatePriceDialog = ({
               )}
             />
           </FormFieldWrapper>
+
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-medium">
+                SEO Meta (optional — update if it mentions the old price)
+              </span>
+              <MetadataGenerateButton
+                missingHint="Phone details are still loading"
+                buildSnapshot={() => {
+                  const brandName = fullPhone?.brand?.name?.trim()
+                  if (!fullPhone || !brandName) return null
+                  const dialogVariants = form.getValues("variants")
+                  return buildMetadataSnapshot(
+                    {
+                      model: fullPhone.model,
+                      title: fullPhone.title,
+                      bd_status: form.getValues("bd_status"),
+                      approximate_price_bd: fullPhone.approximate_price_bd,
+                      variants: dialogVariants.map((v, i) => ({
+                        ram: fullPhone.variants?.[i]?.ram,
+                        official_price: v.official_price,
+                        unofficial_price: v.unofficial_price,
+                      })),
+                      battery: fullPhone.battery,
+                      back_camera: fullPhone.back_camera,
+                      display: fullPhone.display,
+                      platform: fullPhone.platform,
+                      network: fullPhone.network,
+                    },
+                    brandName
+                  )
+                }}
+                onGenerated={(meta) => {
+                  form.setValue("meta_title", meta.meta_title, {
+                    shouldDirty: true,
+                  })
+                  form.setValue("meta_description", meta.meta_description, {
+                    shouldDirty: true,
+                  })
+                  form.setValue("meta_keywords", meta.meta_keywords, {
+                    shouldDirty: true,
+                  })
+                }}
+              />
+            </div>
+            <FormFieldWrapper
+              label="Meta Title"
+              error={form.formState.errors.meta_title?.message}
+            >
+              <Controller
+                control={form.control}
+                name="meta_title"
+                render={({ field }) => (
+                  <Input placeholder="SEO title" {...field} />
+                )}
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper
+              label="Meta Description"
+              error={form.formState.errors.meta_description?.message}
+            >
+              <Controller
+                control={form.control}
+                name="meta_description"
+                render={({ field }) => (
+                  <Textarea placeholder="SEO description" rows={3} {...field} />
+                )}
+              />
+            </FormFieldWrapper>
+            <FormFieldWrapper
+              label="Meta Keywords"
+              error={form.formState.errors.meta_keywords?.message}
+            >
+              <Controller
+                control={form.control}
+                name="meta_keywords"
+                render={({ field }) => (
+                  <Input placeholder="keyword1, keyword2" {...field} />
+                )}
+              />
+            </FormFieldWrapper>
+          </div>
 
           <DialogFooter>
             <Button

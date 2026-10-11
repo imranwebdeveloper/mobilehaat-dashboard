@@ -56,6 +56,9 @@ export interface UpdateVariantsPricePayload {
   status?: string
   bd_status?: string
   reason?: string
+  meta_title?: string
+  meta_description?: string
+  meta_keywords?: string
 }
 
 export const priceHistoryApi = configApi.injectEndpoints({

@@ -3,6 +3,29 @@ import { configApi } from "@/config/reduxApiConfig"
 import { IPhone, PhoneQuery } from "./phones.type"
 import { PhoneFormValues } from "./phones.dto"
 
+export interface GenerateMetadataBody {
+  brand: string
+  phone_model: string
+  title?: string
+  bd_status?: string
+  official_price?: number
+  unofficial_price?: number
+  approximate_price_bd?: number
+  battery_mah?: number
+  main_camera_mp?: number
+  display_size?: string
+  chipset?: string
+  ram_gb?: number
+  is_5g?: boolean
+  guidelines?: string
+}
+
+export interface GeneratedMetadata {
+  meta_title: string
+  meta_description: string
+  meta_keywords: string
+}
+
 export const phoneApi = configApi.injectEndpoints({
   endpoints: (build) => ({
     createPhone: build.mutation<ApiResponse<IPhone>, PhoneFormValues>({
@@ -48,6 +71,17 @@ export const phoneApi = configApi.injectEndpoints({
       }),
       invalidatesTags: ["Phone"],
     }),
+
+    generatePhoneMetadata: build.mutation<
+      ApiResponse<GeneratedMetadata>,
+      GenerateMetadataBody
+    >({
+      query: (body) => ({
+        url: `/ai/metadata`,
+        method: "POST",
+        body,
+      }),
+    }),
   }),
 })
 
@@ -57,4 +91,5 @@ export const {
   useGetPhoneByIdQuery,
   useUpdatePhoneMutation,
   useDeletePhoneMutation,
+  useGeneratePhoneMetadataMutation,
 } = phoneApi

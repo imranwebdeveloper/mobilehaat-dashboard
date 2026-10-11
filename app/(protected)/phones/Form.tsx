@@ -56,6 +56,8 @@ import {
 import SingleSelect from "@/components/common/select/SingleSelect"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
 import PhoneKeyValueEditor from "./PhoneKeyValueEditor"
+import MetadataGenerateButton from "./MetadataGenerateButton"
+import { buildMetadataSnapshot } from "./metadataSnapshot"
 
 const EXTRA_GROUP_KEY_OPTIONS = [
   { label: "Display", value: "display" },
@@ -1699,8 +1701,28 @@ export default function PhoneForm(props?: {
 
               {/* SEO */}
               <Card>
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>SEO Meta Tags</CardTitle>
+                  <MetadataGenerateButton
+                    missingHint="Select a brand and enter the model first"
+                    buildSnapshot={() => {
+                      const name = brand?.label?.trim()
+                      const values = form.getValues()
+                      if (!name || !values.model?.trim()) return null
+                      return buildMetadataSnapshot(values, name)
+                    }}
+                    onGenerated={(meta) => {
+                      form.setValue("meta_title", meta.meta_title, {
+                        shouldDirty: true,
+                      })
+                      form.setValue("meta_description", meta.meta_description, {
+                        shouldDirty: true,
+                      })
+                      form.setValue("meta_keywords", meta.meta_keywords, {
+                        shouldDirty: true,
+                      })
+                    }}
+                  />
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormFieldWrapper label="Meta Title">

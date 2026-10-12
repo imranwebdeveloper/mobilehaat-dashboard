@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { toast } from "sonner"
 import {
   Controller,
   useFieldArray,
@@ -25,6 +26,8 @@ import {
   Save,
   X,
   ChevronDown,
+  FileJson,
+  AlertTriangle,
 } from "lucide-react"
 import { AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
 import type { SelectOption } from "@/components/common/select/AsyncSelect"
@@ -37,6 +40,8 @@ import SingleSelect from "@/components/common/select/SingleSelect"
 import { SimpleRichText } from "@/components/common/SimpleRichText"
 import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
 import { cn } from "@/lib/utils"
+import { WorkflowImportDialog } from "./WorkflowImportDialog"
+import type { WorkflowImport } from "./workflowImport"
 
 function FaqItem({
   control,
@@ -286,7 +291,23 @@ export default function Form() {
     handleThumbnailPick,
     authorOption,
     handleAuthorPick,
+    handleWorkflowImport,
   } = useCustomForm()
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  // Unresolved phones/author from the last JSON import, shown until dismissed.
+  const [importWarnings, setImportWarnings] = useState<string[]>([])
+
+  const handleImport = async (data: WorkflowImport) => {
+    const warnings = await handleWorkflowImport(data)
+    setImportWarnings(warnings)
+    if (warnings.length) {
+      toast.warning(
+        `Imported with ${warnings.length} warning(s). Review before saving.`
+      )
+    } else {
+      toast.success("Imported. Review the form, pick a thumbnail and save.")
+    }
+  }
 
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
@@ -311,9 +332,45 @@ export default function Form() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-4 lg:flex-row">
             <div className="flex-1 space-y-6">
+              {importWarnings.length > 0 && (
+                <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="flex items-center gap-1.5 font-medium">
+                      <AlertTriangle className="h-4 w-4" />
+                      Import warnings
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setImportWarnings([])}
+                      className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <ul className="list-disc space-y-0.5 pl-5 text-xs">
+                    {importWarnings.map((w, i) => (
+                      <li key={i}>{w}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <Card>
                 <CardHeader>
-                  <CardTitle>General Information</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>General Information</CardTitle>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      <FileJson className="mr-1 h-3 w-3" />
+                      Import JSON
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormFieldWrapper
@@ -513,7 +570,10 @@ export default function Form() {
                       phoneLabel={field.label as string}
                       onPhoneChange={(val) =>
                         update(index, {
+                          // Current values, not the field snapshot, so content
+                          // typed (or imported) before picking a phone is kept.
                           ...field,
+                          ...form.getValues(`rankings.${index}`),
                           phone_id: val?.value || "",
                           label: val?.label || "",
                         })
@@ -741,6 +801,17 @@ export default function Form() {
             </div>
           </div>
         </form>
+
+        <WorkflowImportDialog
+          open={isImportOpen}
+          onOpenChange={setIsImportOpen}
+          hasContent={
+            isEdit ||
+            !!form.getValues("title") ||
+            !!form.getValues("rankings")?.length
+          }
+          onApply={handleImport}
+        />
     </div>
   )
 }

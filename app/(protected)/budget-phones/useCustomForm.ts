@@ -6,10 +6,13 @@ import { toast } from "sonner"
 import { useParams, useRouter } from "next/navigation"
 import { budgetPhoneSchema, BudgetPhoneFormValues } from "./budget-phones.dto"
 import { budgetPhoneApi } from "./budget-phones.api"
-import { BudgetPhoneStatus } from "./budget-phones.type"
+import { BudgetPhoneBestFor, BudgetPhoneStatus } from "./budget-phones.type"
 import { IMedia } from "../media/media.type"
 import { slugify } from "@/lib/utils"
 import { SelectOption } from "@/components/common/select/AsyncSelect"
+import { phoneApi } from "../phones/phones.api"
+import { globalApi } from "@/store/global.api"
+import type { WorkflowImport, WorkflowRanking } from "./workflowImport"
 
 const defaultValues: BudgetPhoneFormValues = {
   title: "",
@@ -57,6 +60,8 @@ export const useCustomForm = () => {
   const [create, createRes] = budgetPhoneApi.useCreateBudgetPhoneMutation()
   const [update, updateRes] = budgetPhoneApi.useUpdateBudgetPhoneMutation()
   const [getById, getByIdRes] = budgetPhoneApi.useLazyGetBudgetPhoneByIdQuery()
+  const [getPhoneById] = phoneApi.useLazyGetPhoneByIdQuery()
+  const [getData] = globalApi.useLazyGetDataQuery()
 
   const schema = useMemo(() => budgetPhoneSchema(), [])
 
@@ -152,6 +157,120 @@ export const useCustomForm = () => {
     form.setValue("author", val?.value || "", { shouldValidate: true })
   }
 
+  // Exact-slug lookup through the generic list endpoint (regex search on
+  // the slug field, then an exact match so "x-20" never picks "x-20-pro").
+  const findBySlug = async (url: string, slug: string) => {
+    try {
+      const res = await getData({
+        url,
+        search: slug,
+        searchFields: "slug",
+        limit: 20,
+      }).unwrap()
+      return res.data.find((item) => item?.slug === slug) || null
+    } catch {
+      return null
+    }
+  }
+
+  // phone_db_id first (verifies the id still exists); falls back to the
+  // phone slug, which also catches phones created after the workflow ran.
+  const resolvePhone = async (
+    r: WorkflowRanking
+  ): Promise<SelectOption | null> => {
+    if (r.phone_db_id) {
+      try {
+        const res = await getPhoneById(r.phone_db_id, true).unwrap()
+        if (res.data?._id) {
+          return { value: res.data._id, label: res.data.title }
+        }
+      } catch {
+        // Unknown or malformed id: try the slug below.
+      }
+    }
+    if (r.phone_slug) {
+      const phone = await findBySlug("/phones", r.phone_slug)
+      if (phone?._id) return { value: phone._id, label: phone.title }
+    }
+    return null
+  }
+
+  // Fills the whole form from a workflow 08_publish.json. Thumbnail is
+  // left alone; nothing is saved. Returns warnings for anything that could
+  // not be resolved, so the form can show them to the editor.
+  const handleWorkflowImport = async ({ cms }: WorkflowImport) => {
+    const warnings: string[] = []
+    const current = form.getValues()
+
+    const phones = await Promise.all(cms.rankings.map(resolvePhone))
+    const rankings = cms.rankings.map((r, i) => {
+      const phone = phones[i]
+      const rank = Number(r.rank) || i + 1
+      if (!phone) {
+        warnings.push(
+          `#${rank} ${r.phone_title || r.phone_slug || "Phone"}: not found in the phone DB. Pick the phone manually (its content was imported).`
+        )
+      }
+      return {
+        rank,
+        phone_id: phone?.value || "",
+        content: r.content_html || "",
+        label: phone?.label || "",
+      }
+    })
+
+    let author = current.author
+    let authorOption: SelectOption | null = null
+    if (cms.author) {
+      const found = await findBySlug("/authors", cms.author)
+      if (found?._id) {
+        author = found._id
+        authorOption = { label: found.name || cms.author, value: found._id }
+      } else {
+        warnings.push(
+          `Author "${cms.author}" not found. The author was left unchanged.`
+        )
+      }
+    }
+
+    const bestForValues = Object.values(BudgetPhoneBestFor) as string[]
+    const bestFor = (cms.best_for || []).filter((v) =>
+      bestForValues.includes(v)
+    ) as BudgetPhoneBestFor[]
+    const status = Object.values(BudgetPhoneStatus).find(
+      (s) => s === cms.status
+    )
+
+    form.reset(
+      {
+        ...current,
+        title: cms.title,
+        slug: cms.slug || current.slug,
+        intro: cms.intro || "",
+        disclaimer: cms.disclaimer_html || "",
+        key_differences: cms.key_differences_html || "",
+        author,
+        best_for: bestFor,
+        meta_title: cms.meta_title || "",
+        meta_description: cms.meta_description || "",
+        meta_keywords: cms.meta_keywords || "",
+        min_price: cms.min_price ?? current.min_price,
+        max_price: cms.max_price ?? current.max_price,
+        status: status || current.status,
+        rankings,
+        faq: (cms.faq || []).map((f) => ({
+          question: f.question,
+          answer: f.answer_html || "",
+        })),
+      },
+      { keepDefaultValues: true }
+    )
+    if (authorOption) {
+      setAuthorPick({ key: itemId, option: authorOption })
+    }
+    return warnings
+  }
+
   const onSubmit = async (data: BudgetPhoneFormValues) => {
     try {
       const payload = {
@@ -200,5 +319,6 @@ export const useCustomForm = () => {
     handleThumbnailPick,
     authorOption,
     handleAuthorPick,
+    handleWorkflowImport,
   }
 }

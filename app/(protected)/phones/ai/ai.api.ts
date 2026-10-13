@@ -10,11 +10,35 @@ export interface ApproveExtractionResult {
   phone: unknown
 }
 
+export type ExtractionSourceHint = "auto" | "gsmarena" | "mobiledokan" | "generic"
+
+export interface CreateFromTextBody {
+  text: string
+  title?: string
+  sourceLabel?: string
+  source?: ExtractionSourceHint
+}
+
 export const aiApi = scraperApi.injectEndpoints({
   endpoints: (build) => ({
-    createExtraction: build.mutation<MobileExtraction, { url: string }>({
+    createExtraction: build.mutation<
+      MobileExtraction,
+      { url: string; source?: ExtractionSourceHint }
+    >({
       query: (body) => ({
         url: `/mobile-extractions`,
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["MobileExtraction"],
+    }),
+
+    createFromTextExtraction: build.mutation<
+      MobileExtraction,
+      CreateFromTextBody
+    >({
+      query: (body) => ({
+        url: `/mobile-extractions/from-text`,
         method: "POST",
         body,
       }),
@@ -84,6 +108,7 @@ export const aiApi = scraperApi.injectEndpoints({
 
 export const {
   useCreateExtractionMutation,
+  useCreateFromTextExtractionMutation,
   useGetAllExtractionsQuery,
   useGetExtractionByIdQuery,
   useLazyGetExtractionByIdQuery,

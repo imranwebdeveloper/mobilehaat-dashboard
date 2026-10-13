@@ -1471,7 +1471,7 @@ export default function PhoneForm(props?: {
                           control={form.control}
                           name={`sources.${index}.label`}
                           render={({ field }) => (
-                            <Input {...field} placeholder="GSMArena" />
+                            <Input {...field} placeholder="e.g. GSMArena, MobileDokan" />
                           )}
                         />
                       </FormFieldWrapper>

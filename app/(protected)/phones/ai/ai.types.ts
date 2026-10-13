@@ -149,7 +149,7 @@ export interface MobileExtraction {
   normalizedUrl: string
   status: AiExtractionStatus
   lastError?: AiStageError | null
-  source?: { label: string; url: string } | null
+  source?: { label: string; url: string; adapter?: string } | null
   rawText?: string
   structuredData?: AiStructure | null
   generatedAt?: string

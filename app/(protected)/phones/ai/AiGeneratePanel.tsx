@@ -13,10 +13,20 @@ import {
   Trash2,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import type { ExtractionSourceHint } from "./ai.api"
+import {
   useCreateExtractionMutation,
+  useCreateFromTextExtractionMutation,
   useGetAllExtractionsQuery,
   useGetExtractionByIdQuery,
   useRegenerateExtractionMutation,
@@ -72,16 +82,51 @@ function StatusPill({ status }: { status: AiExtractionStatus }) {
   )
 }
 
+const SOURCE_META: Record<string, { label: string; className: string }> = {
+  gsmarena: { label: "GSMArena", className: "bg-sky-500/15 text-sky-600" },
+  mobiledokan: {
+    label: "MobileDokan",
+    className: "bg-amber-500/15 text-amber-600",
+  },
+  generic: { label: "Other", className: "bg-muted text-muted-foreground" },
+  auto: { label: "Auto", className: "bg-muted text-muted-foreground" },
+}
+
+function SourcePill({ adapter }: { adapter?: string | null }) {
+  if (!adapter) return null
+  const key = adapter.toLowerCase()
+  const meta = SOURCE_META[key] || {
+    label: adapter,
+    className: "bg-muted text-muted-foreground",
+  }
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
+        meta.className
+      )}
+    >
+      {meta.label}
+    </span>
+  )
+}
+
 interface AiGeneratePanelProps {
   onFillForm: (draft: PhoneFormDraft) => void
 }
 
 export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
+  const [mode, setMode] = useState<"url" | "text">("url")
   const [url, setUrl] = useState("")
+  const [rawText, setRawText] = useState("")
+  const [rawTitle, setRawTitle] = useState("")
+  const [source, setSource] = useState<ExtractionSourceHint>("auto")
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
   const [createExtraction, { isLoading: isCreating }] =
     useCreateExtractionMutation()
+  const [createFromText, { isLoading: isCreatingFromText }] =
+    useCreateFromTextExtractionMutation()
   const [regenerateExtraction, { isLoading: isRegenerating }] =
     useRegenerateExtractionMutation()
   const [generateEditorial, { isLoading: isGeneratingEditorial }] =
@@ -98,6 +143,7 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
 
   const isBusy =
     isCreating ||
+    isCreatingFromText ||
     isRegenerating ||
     isGeneratingEditorial ||
     isApproving ||
@@ -127,16 +173,50 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
   const handleGenerate = async () => {
     const trimmed = url.trim()
     if (!trimmed) {
-      toast.error("Please enter a GSMArena URL")
+      toast.error("Please enter a specs URL")
+      return
+    }
+    if (source === "gsmarena" && !trimmed.includes("gsmarena.com")) {
+      toast.error("Selected source is GSMArena — paste a gsmarena.com URL or switch to Auto")
+      return
+    }
+    if (source === "mobiledokan" && !trimmed.includes("mobiledokan.co")) {
+      toast.error("Selected source is MobileDokan — paste a mobiledokan.co URL or switch to Auto")
       return
     }
     try {
-      const result = await createExtraction({ url: trimmed }).unwrap()
+      const result = await createExtraction({
+        url: trimmed,
+        source,
+      }).unwrap()
       setSelectedId(result._id)
     } catch (err: any) {
       toast.error(
         err?.data?.message || err?.error || "Failed to start extraction"
       )
+    }
+  }
+
+  const handleGenerateFromText = async () => {
+    const text = rawText.trim()
+    if (text.length < 200) {
+      toast.error(
+        `Please paste at least 200 characters of specs (currently ${text.length}). Full spec tables give the best results.`
+      )
+      return
+    }
+    try {
+      const result = await createFromText({
+        text,
+        title: rawTitle.trim() || undefined,
+        source,
+      }).unwrap()
+      setSelectedId(result._id)
+    } catch (err: any) {
+      const message = Array.isArray(err?.data?.message)
+        ? err.data.message.join(", ")
+        : err?.data?.message || err?.error
+      toast.error(message || "Failed to start extraction from text")
     }
   }
 
@@ -227,6 +307,7 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
       model: data.model,
       announced: data.announced,
       released: data.released,
+      bdStatus: data.bd_status,
       rating: data.expert_rating,
       price: data.approximate_price_bd,
       chipset: data.platform?.chipset,
@@ -247,27 +328,130 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Input
-              placeholder="Paste a GSMArena specs URL (e.g. https://www.gsmarena.com/blackview_shark_8-12510.php)"
-              value={url}
-              onChange={(event) => setUrl(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault()
-                  void handleGenerate()
-                }
-              }}
-            />
-            <Button onClick={() => void handleGenerate()} disabled={isBusy}>
-              {isCreating ? <Loader2 className="animate-spin" /> : <Send />}
-              Generate
+          <div className="flex gap-2">
+            <Button
+              variant={mode === "url" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("url")}
+            >
+              From URL
+            </Button>
+            <Button
+              variant={mode === "text" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setMode("text")}
+            >
+              From Text
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            The scraper fetches the page, extracts specs, and asks Gemini to
-            build a full structured profile. This may take a minute or two.
-          </p>
+          {mode === "url" ? (
+            <>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Select
+                  value={source}
+                  onValueChange={(value) =>
+                    setSource(value as ExtractionSourceHint)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-44">
+                    <SelectValue placeholder="Source" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto detect</SelectItem>
+                    <SelectItem value="gsmarena">GSMArena</SelectItem>
+                    <SelectItem value="mobiledokan">MobileDokan</SelectItem>
+                    <SelectItem value="generic">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Input
+                  placeholder={
+                    source === "gsmarena"
+                      ? "Paste a GSMArena specs URL (e.g. https://www.gsmarena.com/blackview_shark_8-12510.php)"
+                      : source === "mobiledokan"
+                        ? "Paste a MobileDokan URL (e.g. https://www.mobiledokan.co/product/oneplus-16/)"
+                        : "Paste any supported specs URL (GSMArena or MobileDokan)"
+                  }
+                  value={url}
+                  onChange={(event) => setUrl(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      void handleGenerate()
+                    }
+                  }}
+                />
+                <Button
+                  onClick={() => void handleGenerate()}
+                  disabled={isBusy}
+                >
+                  {isCreating ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Send />
+                  )}
+                  Generate
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {source === "mobiledokan"
+                  ? "MobileDokan is best for BD price, colors, release status and FAQ. Output format is identical to GSMArena."
+                  : source === "gsmarena"
+                    ? "GSMArena is best for full global specs. Output format is identical to MobileDokan."
+                    : "The scraper auto-detects the site, extracts specs, and asks Gemini to build a full structured profile. This may take a minute or two."}
+              </p>
+            </>
+          ) : (
+            <>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  placeholder="Phone title (optional, e.g. OnePlus 16)"
+                  value={rawTitle}
+                  onChange={(event) => setRawTitle(event.target.value)}
+                  className="sm:max-w-72"
+                />
+                <Select
+                  value={source}
+                  onValueChange={(value) =>
+                    setSource(value as ExtractionSourceHint)
+                  }
+                >
+                  <SelectTrigger className="w-full sm:w-44">
+                    <SelectValue placeholder="Source hint" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="gsmarena">GSMArena-like</SelectItem>
+                    <SelectItem value="mobiledokan">MobileDokan-like</SelectItem>
+                    <SelectItem value="generic">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Textarea
+                placeholder="Paste full specification text here (min 200 characters) — e.g. copied spec tables, Network / Display / Platform / Memory / Camera / Battery sections, BD price if known…"
+                value={rawText}
+                onChange={(event) => setRawText(event.target.value)}
+                rows={8}
+              />
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  {rawText.trim().length < 200
+                    ? `Need at least 200 characters (currently ${rawText.trim().length}).`
+                    : `${rawText.trim().length.toLocaleString()} characters — ready. Same structured result as URL mode.`}
+                </p>
+                <Button
+                  onClick={() => void handleGenerateFromText()}
+                  disabled={isBusy || rawText.trim().length < 200}
+                >
+                  {isCreatingFromText ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Send />
+                  )}
+                  Generate
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
@@ -294,10 +478,26 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                     : "—"}
                 </span>
               </span>
-              <StatusPill status={extraction.status} />
+              <span className="flex shrink-0 items-center gap-2">
+                <SourcePill adapter={extraction.source?.adapter} />
+                <StatusPill status={extraction.status} />
+              </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {extraction.source?.adapter || extraction.source?.label ? (
+              <p className="text-xs text-muted-foreground">
+                Source:{" "}
+                <span className="font-medium text-foreground">
+                  {extraction.source?.adapter || extraction.source?.label}
+                </span>
+                {extraction.source?.label &&
+                extraction.source?.adapter &&
+                extraction.source.label !== extraction.source.adapter
+                  ? ` · ${extraction.source.label}`
+                  : ""}
+              </p>
+            ) : null}
             {extraction.lastError ? (
               <p className="text-sm text-destructive">
                 {extraction.lastError.message}
@@ -351,6 +551,10 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                   <dd className="font-medium">
                     {summary.announced || "—"} / {summary.released || "—"}
                   </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">BD Status</dt>
+                  <dd className="font-medium">{summary.bdStatus || "—"}</dd>
                 </div>
               </dl>
             ) : (
@@ -490,6 +694,7 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                     {item.approved ? (
                       <Check className="size-3.5 text-emerald-600" />
                     ) : null}
+                    <SourcePill adapter={item.source?.adapter} />
                     <StatusPill status={item.status} />
                   </span>
                 </button>

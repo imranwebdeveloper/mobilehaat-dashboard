@@ -34,11 +34,18 @@ import {
   Trash2,
 } from "lucide-react"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
-import { AsyncMultiSelect, AsyncSingleSelect } from "@/components/common/select/AsyncSelect"
+import {
+  AsyncMultiSelect,
+  AsyncSingleSelect,
+} from "@/components/common/select/AsyncSelect"
 import { JodiRichTextEditor } from "@/components/common/JodiRichTextEditor"
 import { MediaPicker } from "../media/MediaPicker"
 import { toast } from "sonner"
 import { IMedia } from "../media/media.type"
+import { useState } from "react"
+import { AlertTriangle, FileJson } from "lucide-react"
+import { WorkflowImportDialog } from "./WorkflowImportDialog"
+import type { ComparisonWorkflowImport } from "./workflowImport"
 
 // ─── Scores Card (editable) ─────────────────────────────────────────
 
@@ -412,8 +419,8 @@ function KeyDifferencesCard({
       <CardContent className="space-y-3">
         {fields.length === 0 && (
           <p className="text-xs text-muted-foreground">
-            No key differences yet. Generate with AI or click &quot;Add&quot;
-            to create one.
+            No key differences yet. Generate with AI or click &quot;Add&quot; to
+            create one.
           </p>
         )}
         {fields.map((field, index) => (
@@ -542,6 +549,7 @@ export default function Form() {
     setThumbnail,
     handleGenerateAi,
     isGenerating,
+    handleWorkflowImport,
     selectedPhones,
     authorOption,
     setAuthorOption,
@@ -552,6 +560,21 @@ export default function Form() {
     appendKd,
     removeKd,
   } = useCustomForm()
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  // Unresolved phones/author from the last JSON import, shown until dismissed.
+  const [importWarnings, setImportWarnings] = useState<string[]>([])
+
+  const handleImport = async (data: ComparisonWorkflowImport) => {
+    const warnings = await handleWorkflowImport(data)
+    setImportWarnings(warnings)
+    if (warnings.length) {
+      toast.warning(
+        `Imported with ${warnings.length} warning(s). Review before saving.`
+      )
+    } else {
+      toast.success("Imported. Review the form, pick a thumbnail and save.")
+    }
+  }
 
   if (isFetching) {
     return <FullWidthLoading />
@@ -559,42 +582,82 @@ export default function Form() {
 
   return (
     <div className="w-full px-6 py-4">
-      <form onSubmit={form.handleSubmit(onSubmit, (errors) => {
-        console.error("Form validation errors:", errors)
-        const firstError = Object.values(errors)[0]
-        const message = (firstError?.message as string) || "Please fix the form errors"
-        toast.error(message)
-      })} className="space-y-4">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, (errors) => {
+          console.error("Form validation errors:", errors)
+          const firstError = Object.values(errors)[0]
+          const message =
+            (firstError?.message as string) || "Please fix the form errors"
+          toast.error(message)
+        })}
+        className="space-y-4"
+      >
         <div className="flex flex-col gap-4 lg:flex-row">
           {/* Main Content */}
           <div className="flex-1 space-y-4">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>General Information</CardTitle>
+            {importWarnings.length > 0 && (
+              <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="flex items-center gap-1.5 font-medium">
+                    <AlertTriangle className="h-4 w-4" />
+                    Import warnings
+                  </p>
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    onClick={handleGenerateAi}
-                    disabled={
-                      isGenerating ||
-                      !selectedPhones ||
-                      selectedPhones.length < 2
-                    }
+                    onClick={() => setImportWarnings([])}
+                    className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
                   >
-                    {isGenerating ? (
-                      <>
-                        <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Generate with AI
-                      </>
-                    )}
+                    <X className="h-3 w-3" />
                   </Button>
+                </div>
+                <ul className="list-disc space-y-0.5 pl-5 text-xs">
+                  {importWarnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle>General Information</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsImportOpen(true)}
+                    >
+                      <FileJson className="mr-2 h-4 w-4" />
+                      Import JSON
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateAi}
+                      disabled={
+                        isGenerating ||
+                        !selectedPhones ||
+                        selectedPhones.length < 2
+                      }
+                    >
+                      {isGenerating ? (
+                        <>
+                          <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Generate with AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -743,7 +806,12 @@ export default function Form() {
               </CardContent>
             </Card>
 
-            <FaqCard control={form.control} fields={faqFields} append={appendFaq} remove={removeFaq} />
+            <FaqCard
+              control={form.control}
+              fields={faqFields}
+              append={appendFaq}
+              remove={removeFaq}
+            />
 
             <KeyDifferencesCard
               control={form.control}
@@ -860,6 +928,13 @@ export default function Form() {
           </div>
         </div>
       </form>
+
+      <WorkflowImportDialog
+        open={isImportOpen}
+        onOpenChange={setIsImportOpen}
+        hasContent={isEdit || !!form.getValues("title")}
+        onApply={handleImport}
+      />
     </div>
   )
 }

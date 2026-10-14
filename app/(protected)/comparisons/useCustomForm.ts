@@ -17,6 +17,13 @@ import { slugify } from "@/lib/utils"
 import { IPhone } from "../phones/phones.type"
 import { IMedia } from "../media/media.type"
 import { SelectOption } from "@/components/common/select/AsyncSelect"
+import { phoneApi } from "../phones/phones.api"
+import { globalApi } from "@/store/global.api"
+import {
+  SCORE_KEYS,
+  type ComparisonWorkflowImport,
+  type WorkflowPhoneRef,
+} from "./workflowImport"
 
 const defaultValues: ComparisonFormValues = {
   title: "",
@@ -55,6 +62,8 @@ export const useCustomForm = () => {
   const [getById, getByIdRes] = comparisonsApi.useLazyGetComparisonByIdQuery()
   const [generateAi, { isLoading: isGenerating }] =
     comparisonsApi.useGenerateComparisonAiMutation()
+  const [getPhoneById] = phoneApi.useLazyGetPhoneByIdQuery()
+  const [getData] = globalApi.useLazyGetDataQuery()
 
   const schema = useMemo(() => comparisonSchema(), [])
 
@@ -239,6 +248,136 @@ export const useCustomForm = () => {
     }
   }
 
+  // Exact-slug lookup through the generic list endpoint (regex search on
+  // the slug field, then an exact match so "x-20" never picks "x-20-pro").
+  const findBySlug = async (url: string, slug: string) => {
+    try {
+      const res = await getData({
+        url,
+        search: slug,
+        searchFields: "slug",
+        limit: 20,
+      }).unwrap()
+      return res.data.find((item) => item?.slug === slug) || null
+    } catch {
+      return null
+    }
+  }
+
+  // db_id first (verifies the id still exists); falls back to the phone slug.
+  const resolvePhone = async (
+    p: WorkflowPhoneRef
+  ): Promise<SelectOption | null> => {
+    if (p.db_id) {
+      try {
+        const res = await getPhoneById(p.db_id, true).unwrap()
+        if (res.data?._id) {
+          return { value: res.data._id, label: res.data.title }
+        }
+      } catch {
+        // Unknown or malformed id: try the slug below.
+      }
+    }
+    if (p.slug) {
+      const phone = await findBySlug("/phones", p.slug)
+      if (phone?._id) return { value: phone._id, label: phone.title }
+    }
+    return null
+  }
+
+  // Fills the form from the comparison workflow's 06_publish.json. Thumbnail
+  // and analysisId are left alone; nothing is saved. Returns warnings for
+  // anything that could not be resolved, so the form can show them.
+  const handleWorkflowImport = async ({
+    cms,
+    phones: phoneRefs,
+  }: ComparisonWorkflowImport) => {
+    const warnings: string[] = []
+    const current = form.getValues()
+
+    const resolved = await Promise.all(phoneRefs.map(resolvePhone))
+    resolved.forEach((phone, i) => {
+      if (!phone) {
+        const ref = phoneRefs[i]
+        warnings.push(
+          `Phone ${i === 0 ? "A" : "B"} (${ref.title || ref.slug || ref.db_id}): not found in the phone DB. Pick it manually, in the same position.`
+        )
+      }
+    })
+    const phoneOptions = resolved.filter((p): p is SelectOption => !!p)
+
+    let author = current.author
+    let authorPick: SelectOption | null = null
+    if (cms.author) {
+      const found = await findBySlug("/authors", cms.author)
+      if (found?._id) {
+        author = found._id
+        authorPick = { label: found.name || cms.author, value: found._id }
+      } else {
+        warnings.push(
+          `Author "${cms.author}" not found. The author was left unchanged.`
+        )
+      }
+    }
+
+    const importedScores = cms.scores
+    const scores = importedScores
+      ? (Object.fromEntries(
+          SCORE_KEYS.map((k) => [
+            k,
+            {
+              phone_a: Number(importedScores[k]?.phone_a) || 0,
+              phone_b: Number(importedScores[k]?.phone_b) || 0,
+            },
+          ])
+        ) as unknown as ComparisonScores)
+      : current.scores
+    const bestFor = cms.best_for
+      ? {
+          phone_a: cms.best_for.phone_a || "",
+          phone_b: cms.best_for.phone_b || "",
+        }
+      : current.best_for
+    const faqs = cms.faqs || []
+    const keyDifferences = (cms.key_differences || []).map((r) => ({
+      category: r.category,
+      phone_a_value: r.phone_a_value,
+      phone_b_value: r.phone_b_value,
+      ...(r.point ? { point: r.point } : {}),
+      winner: r.winner,
+    }))
+    const status = Object.values(ComparisonStatus).find((s) => s === cms.status)
+
+    form.reset(
+      {
+        ...current,
+        title: cms.title,
+        slug: cms.slug || current.slug,
+        phones: phoneOptions.map((p) => p.value),
+        author,
+        intro: cms.intro || "",
+        verdict: cms.verdict || "",
+        best_for: bestFor,
+        faqs,
+        key_differences: keyDifferences,
+        scores,
+        meta_title: cms.meta_title || "",
+        meta_description: cms.meta_description || "",
+        status: status || current.status,
+      },
+      { keepDefaultValues: true }
+    )
+    // reset() alone never re-renders useFieldArray rows.
+    replaceFaqs(faqs)
+    replaceKds(keyDifferences)
+    setPhones(phoneOptions)
+    if (authorPick) setAuthorOption(authorPick)
+    if (scores) setScores(scores)
+    if (bestFor) setBestFor(bestFor)
+    setFaqs(faqs)
+    return warnings
+  }
+
   const onSubmit = async (data: ComparisonFormValues) => {
     try {
       if (isEdit && itemId) {
@@ -284,6 +423,7 @@ export const useCustomForm = () => {
     handleGenerateSlug,
     handleGenerateAi,
     isGenerating,
+    handleWorkflowImport,
     selectedPhones,
     scores,
     bestFor,

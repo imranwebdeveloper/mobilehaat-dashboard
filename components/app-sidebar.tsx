@@ -29,6 +29,7 @@ import {
   PenTool,
   Store,
   Activity,
+  Gauge,
 } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useSiteSetting } from "@/hooks/useSiteSetting"
@@ -65,6 +66,12 @@ const navGroups: {
         title: "Phones",
         url: "/phones",
         icon: <SmartphoneIcon />,
+        permission: Permissions.PHONE_READ,
+      },
+      {
+        title: "Price Priority",
+        url: "/price-watch",
+        icon: <Gauge />,
         permission: Permissions.PHONE_READ,
       },
       {

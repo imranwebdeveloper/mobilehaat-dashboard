@@ -16,6 +16,17 @@ import { BADGES, STAGES } from "./priority.constant"
 
 const ALL = "all"
 
+/** Stages that exist in each tab — offering others would always return 0 rows. */
+const STAGES_BY_TRACK: Record<
+  NonNullable<PriorityQuery["track"]>,
+  PriceStage[]
+> = {
+  ALL: Object.keys(STAGES) as PriceStage[],
+  PRICE: ["LAUNCH", "FRESH", "STABLE", "MATURE"],
+  UPCOMING: [],
+  FROZEN: ["OLD", "SKIP"],
+}
+
 const PriorityFilters = ({
   query,
   brands,
@@ -27,26 +38,30 @@ const PriorityFilters = ({
   onChange: (patch: Partial<PriorityQuery>) => void
   onReset: () => void
 }) => {
+  const stages = STAGES_BY_TRACK[query.track ?? "ALL"]
+
   return (
     <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center">
-      <Select
-        value={query.stage ?? ALL}
-        onValueChange={(v) =>
-          onChange({ stage: v === ALL ? undefined : (v as PriceStage) })
-        }
-      >
-        <SelectTrigger className="w-40 bg-background">
-          <SelectValue placeholder="Stage" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>All stages</SelectItem>
-          {(Object.keys(STAGES) as PriceStage[]).map((s) => (
-            <SelectItem key={s} value={s}>
-              {STAGES[s].emoji} {STAGES[s].label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {stages.length > 0 && (
+        <Select
+          value={query.stage ?? ALL}
+          onValueChange={(v) =>
+            onChange({ stage: v === ALL ? undefined : (v as PriceStage) })
+          }
+        >
+          <SelectTrigger className="w-40 bg-background">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All stages</SelectItem>
+            {stages.map((s) => (
+              <SelectItem key={s} value={s}>
+                {STAGES[s].emoji} {STAGES[s].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select
         value={query.badge ?? ALL}

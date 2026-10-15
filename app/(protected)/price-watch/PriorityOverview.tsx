@@ -54,7 +54,7 @@ const StatCard = ({
   </Card>
 )
 
-const DEFAULT_QUERY: PriorityQuery = { track: "PRICE", page: 1, limit: 50 }
+const DEFAULT_QUERY: PriorityQuery = { track: "ALL", page: 1, limit: 50 }
 
 const TRACK_TABS: {
   value: PriceTrack | "ALL"
@@ -62,6 +62,7 @@ const TRACK_TABS: {
   emoji: string
   hint: string
 }[] = [
+  { value: "ALL", label: "All", emoji: "📱", hint: "Every published phone" },
   {
     value: "PRICE",
     label: "Real price",
@@ -80,7 +81,6 @@ const TRACK_TABS: {
     emoji: "🧊",
     hint: "2+ years old, DISCONTINUED or N/A — no scheduled checks",
   },
-  { value: "ALL", label: "All", emoji: "📱", hint: "Every published phone" },
 ]
 
 const PriorityOverview = () => {

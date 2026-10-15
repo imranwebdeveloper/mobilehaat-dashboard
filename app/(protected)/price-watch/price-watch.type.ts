@@ -13,6 +13,12 @@ export type PriceBadge = "OVERDUE" | "DUE_SOON" | "FRESH" | "INACTIVE"
 
 export type PriceTrack = "PRICE" | "UPCOMING" | "FROZEN"
 
+export type PriceCheckAction =
+  | "UPDATED"
+  | "SAVED_UNCHANGED"
+  | "CONFIRMED"
+  | "NOT_FOUND"
+
 export interface PhonePriority {
   id: string
   title: string
@@ -24,7 +30,11 @@ export interface PhonePriority {
   views: number
   approximate_price_bd: number | null
   checkedAt: string
-  checkedAtSource: "PRICE_HISTORY" | "PHONE_CREATED"
+  checkedAtSource: "PRICE_WATCH" | "PRICE_HISTORY" | "PHONE_CREATED"
+  lastAction: PriceCheckAction | null
+  changedAt: string | null
+  missCount: number
+  suggestDiscontinued: boolean
   stage: PriceStage
   track: PriceTrack
   needsData: boolean

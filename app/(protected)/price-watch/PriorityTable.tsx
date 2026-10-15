@@ -35,6 +35,7 @@ import {
 import { IPagination } from "@/store/global.type"
 import { PhonePriority } from "./price-watch.type"
 import { BADGES, STAGES } from "./priority.constant"
+import PriorityActions from "./PriorityActions"
 
 const COLUMNS = [
   "#",
@@ -46,6 +47,7 @@ const COLUMNS = [
   "Priority",
   "Status",
   "Price",
+  "Actions",
 ]
 
 const formatDate = (value: string | null) =>
@@ -56,6 +58,22 @@ const formatAge = (days: number | null) => {
   if (days < 31) return `${days}d since release`
   if (days < 365) return `${Math.floor(days / 30.44)} mo since release`
   return `${(days / 365).toFixed(1)} yr since release`
+}
+
+/** How the last check happened, e.g. "confirmed" or "not found ×2". */
+const checkLabel = (row: PhonePriority) => {
+  if (row.checkedAtSource === "PHONE_CREATED") return "created"
+  if (row.checkedAtSource === "PRICE_HISTORY") return "price saved"
+  switch (row.lastAction) {
+    case "CONFIRMED":
+      return "✓ confirmed"
+    case "NOT_FOUND":
+      return `not found ×${row.missCount}`
+    case "SAVED_UNCHANGED":
+      return "saved, unchanged"
+    default:
+      return "price updated"
+  }
 }
 
 const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
@@ -113,8 +131,7 @@ const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
             {Math.floor(row.daysSinceCheck)}d ago
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatDate(row.checkedAt)}
-            {row.checkedAtSource === "PHONE_CREATED" && " · created"}
+            {formatDate(row.checkedAt)} · {checkLabel(row)}
           </span>
         </div>
       </TableCell>
@@ -170,6 +187,10 @@ const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
             <History className="size-4" />
           </Link>
         </div>
+      </TableCell>
+
+      <TableCell>
+        <PriorityActions row={row} />
       </TableCell>
     </TableRow>
   )

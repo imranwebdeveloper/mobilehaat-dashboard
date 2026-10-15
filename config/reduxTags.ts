@@ -30,4 +30,5 @@ export const reduxTags = [
   "SellerOffer",
   "PaymentRecord",
   "UserMedia",
+  "PriceWatch",
 ]

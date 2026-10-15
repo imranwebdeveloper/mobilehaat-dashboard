@@ -3,10 +3,12 @@
 import Link from "next/link"
 import { format } from "date-fns"
 import {
+  BellRing,
   ChevronLeft,
   ChevronRight,
   Flame,
   History,
+  Rocket,
   TriangleAlert,
 } from "lucide-react"
 import {
@@ -34,7 +36,7 @@ import {
 } from "@/components/ui/select"
 import { IPagination } from "@/store/global.type"
 import { PhonePriority } from "./price-watch.type"
-import { BADGES, STAGES } from "./priority.constant"
+import { BADGES, CONFIDENCE, STAGES } from "./priority.constant"
 import PriorityActions from "./PriorityActions"
 
 const COLUMNS = [
@@ -142,6 +144,23 @@ const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
           <span className="text-xs text-muted-foreground">
             {row.intervalDays ? `every ${row.intervalDays}d` : "no checks"}
           </span>
+          {row.expected?.launch_bd && (
+            <span
+              className={`inline-flex items-center gap-1 text-xs ${row.launchOverdue ? "font-medium text-red-600" : "text-fuchsia-700"}`}
+              title={
+                row.launchOverdue
+                  ? "Expected BD launch date has passed — did it launch?"
+                  : "Expected BD launch"
+              }
+            >
+              {row.launchOverdue ? (
+                <BellRing className="size-3" />
+              ) : (
+                <Rocket className="size-3" />
+              )}
+              BD {formatDate(row.expected.launch_bd)}
+            </span>
+          )}
         </div>
       </TableCell>
 
@@ -174,11 +193,37 @@ const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
 
       <TableCell>
         <div className="flex items-center gap-2">
-          <span className="tabular-nums">
-            {row.approximate_price_bd
-              ? `৳${row.approximate_price_bd.toLocaleString()}`
-              : "—"}
-          </span>
+          <div className="flex flex-col">
+            <span className="tabular-nums">
+              {row.approximate_price_bd
+                ? `${row.track === "UPCOMING" ? "~" : ""}৳${row.approximate_price_bd.toLocaleString()}`
+                : "—"}
+            </span>
+            {row.track === "UPCOMING" &&
+              (row.expected ? (
+                <span
+                  className={`mt-0.5 w-fit rounded-full border px-2 py-px text-[11px] font-medium ${CONFIDENCE[row.expected.confidence].className}`}
+                  title={
+                    row.expected.basis ||
+                    CONFIDENCE[row.expected.confidence].hint
+                  }
+                >
+                  {CONFIDENCE[row.expected.confidence].label}
+                </span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">
+                  no basis yet
+                </span>
+              ))}
+            {row.track !== "UPCOMING" && row.expected && (
+              <span
+                className="text-[11px] text-muted-foreground"
+                title="Expected price before the BD launch"
+              >
+                expected ৳{row.expected.price.toLocaleString()}
+              </span>
+            )}
+          </div>
           <Link
             href={`/phones/${row.id}/price-history`}
             className="text-muted-foreground hover:text-primary"

@@ -1,4 +1,8 @@
-import { PriceBadge, PriceStage } from "./price-watch.type"
+import {
+  ExpectedPriceConfidence,
+  PriceBadge,
+  PriceStage,
+} from "./price-watch.type"
 
 export const STAGES: Record<
   PriceStage,
@@ -79,4 +83,33 @@ export const BADGES: Record<
     dot: "bg-gray-400",
     className: "border-gray-200 bg-gray-50 text-gray-500",
   },
+}
+
+export const CONFIDENCE: Record<
+  ExpectedPriceConfidence,
+  { label: string; hint: string; className: string }
+> = {
+  RUMOUR: {
+    label: "Rumour",
+    hint: "Leaks only — no launch anywhere yet",
+    className: "border-gray-200 bg-gray-50 text-gray-600",
+  },
+  GLOBAL_LAUNCH: {
+    label: "Global launch",
+    hint: "Launched abroad (India / global) — price converted",
+    className: "border-sky-200 bg-sky-50 text-sky-700",
+  },
+  BD_TEASER: {
+    label: "BD teaser",
+    hint: "Brand has announced the BD launch",
+    className: "border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700",
+  },
+}
+
+export const CURRENCY_SYMBOL: Record<string, string> = {
+  BDT: "৳",
+  INR: "₹",
+  USD: "$",
+  CNY: "¥",
+  EUR: "€",
 }

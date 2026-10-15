@@ -3,9 +3,12 @@
 import { useState } from "react"
 import {
   AlertTriangle,
+  BellRing,
   CircleDollarSign,
   Clock,
+  FileQuestion,
   Gauge,
+  Rocket,
   Sparkles,
   Wrench,
 } from "lucide-react"
@@ -142,6 +145,16 @@ const PriorityOverview = () => {
                   {summary.upcoming_due} due
                 </span>
               )}
+              {tab.value === "UPCOMING" &&
+                !!summary?.upcoming_track.launch_overdue && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-xs text-white tabular-nums"
+                    title="Expected BD launch date passed"
+                  >
+                    <BellRing className="size-3" />
+                    {summary.upcoming_track.launch_overdue}
+                  </span>
+                )}
             </button>
           )
         })}
@@ -153,6 +166,45 @@ const PriorityOverview = () => {
           Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-27.5 rounded-xl" />
           ))
+        ) : query.track === "UPCOMING" ? (
+          <>
+            <StatCard
+              title="Due now"
+              value={summary.upcoming_track.due_now}
+              hint={`of ${summary.upcoming_track.total} upcoming phones`}
+              icon={Clock}
+              color="bg-red-500"
+              onClick={() => updateQuery({ dueOnly: true, badge: undefined })}
+            />
+            <StatCard
+              title="Launch date passed"
+              value={summary.upcoming_track.launch_overdue}
+              hint="still UPCOMING — did it launch?"
+              icon={BellRing}
+              color="bg-orange-500"
+            />
+            <StatCard
+              title="No estimate"
+              value={summary.upcoming_track.no_estimate}
+              hint="no expected price at all"
+              icon={CircleDollarSign}
+              color="bg-violet-500"
+            />
+            <StatCard
+              title="No basis yet"
+              value={summary.upcoming_track.not_documented}
+              hint="price without basis / confidence"
+              icon={FileQuestion}
+              color="bg-slate-500"
+            />
+            <StatCard
+              title="BD teaser"
+              value={summary.upcoming_track.by_confidence.BD_TEASER ?? 0}
+              hint="BD launch announced"
+              icon={Rocket}
+              color="bg-fuchsia-500"
+            />
+          </>
         ) : (
           <>
             <StatCard

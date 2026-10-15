@@ -1,9 +1,13 @@
 import { configApi } from "@/config/reduxApiConfig"
 import { ApiResponse } from "@/store/global.type"
 import {
+  CalculateExpectedBody,
+  ExpectedCalculation,
+  ExpectedDefaults,
   PhonePriority,
   PriorityQuery,
   PriorityResponse,
+  SaveExpectedPriceBody,
 } from "./price-watch.type"
 
 export const priceWatchApi = configApi.injectEndpoints({
@@ -33,6 +37,33 @@ export const priceWatchApi = configApi.injectEndpoints({
       invalidatesTags: ["PriceWatch"],
     }),
 
+    getExpectedDefaults: build.query<ApiResponse<ExpectedDefaults>, null>({
+      query: () => ({ url: `/price-watch/expected-price/defaults` }),
+    }),
+
+    calculateExpected: build.mutation<
+      ApiResponse<ExpectedCalculation>,
+      CalculateExpectedBody
+    >({
+      query: (body) => ({
+        url: `/price-watch/expected-price/calculate`,
+        method: "POST",
+        body,
+      }),
+    }),
+
+    saveExpectedPrice: build.mutation<
+      ApiResponse<PhonePriority>,
+      { phoneId: string; body: SaveExpectedPriceBody }
+    >({
+      query: ({ phoneId, body }) => ({
+        url: `/price-watch/${phoneId}/expected-price`,
+        method: "PUT",
+        body,
+      }),
+      invalidatesTags: ["PriceWatch", "Phone"],
+    }),
+
     markDiscontinued: build.mutation<ApiResponse<unknown>, string>({
       query: (phoneId) => ({
         url: `/phones/${phoneId}`,
@@ -49,4 +80,7 @@ export const {
   useConfirmPriceMutation,
   useMarkPriceNotFoundMutation,
   useMarkDiscontinuedMutation,
+  useGetExpectedDefaultsQuery,
+  useCalculateExpectedMutation,
+  useSaveExpectedPriceMutation,
 } = priceWatchApi

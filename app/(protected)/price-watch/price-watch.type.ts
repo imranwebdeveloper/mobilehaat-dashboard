@@ -13,6 +13,47 @@ export type PriceBadge = "OVERDUE" | "DUE_SOON" | "FRESH" | "INACTIVE"
 
 export type PriceTrack = "PRICE" | "UPCOMING" | "FROZEN"
 
+export type ExpectedPriceConfidence = "RUMOUR" | "GLOBAL_LAUNCH" | "BD_TEASER"
+
+export interface ExpectedPrice {
+  price: number
+  basis?: string
+  confidence: ExpectedPriceConfidence
+  launch_bd?: string
+  updated_at: string
+}
+
+export interface SaveExpectedPriceBody {
+  price: number
+  basis?: string
+  confidence: ExpectedPriceConfidence
+  launch_bd?: string
+}
+
+export interface CalculateExpectedBody {
+  amount: number
+  currency: string
+  rate?: number
+  factor?: number
+  phoneId?: string
+}
+
+export interface ExpectedCalculation {
+  currency: string
+  amount: number
+  rate: number
+  factor: number
+  converted: number
+  raw: number
+  rounded: number
+}
+
+export interface ExpectedDefaults {
+  exchangeRatesToBdt: Record<string, number>
+  defaultBrandFactor: number
+  brandFactors: Record<string, number>
+}
+
 export type PriceCheckAction =
   | "UPDATED"
   | "SAVED_UNCHANGED"
@@ -35,6 +76,8 @@ export interface PhonePriority {
   changedAt: string | null
   missCount: number
   suggestDiscontinued: boolean
+  expected: ExpectedPrice | null
+  launchOverdue: boolean
   stage: PriceStage
   track: PriceTrack
   needsData: boolean
@@ -65,6 +108,14 @@ export interface PrioritySummary {
     freshness_score: number
   }
   upcoming_due: number
+  upcoming_track: {
+    total: number
+    due_now: number
+    launch_overdue: number
+    no_estimate: number
+    not_documented: number
+    by_confidence: Partial<Record<ExpectedPriceConfidence | "NONE", number>>
+  }
   needs_data: number
   brands: { id: string; name: string; total: number; due: number }[]
 }

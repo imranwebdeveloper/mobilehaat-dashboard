@@ -29,6 +29,8 @@ const defaultValues: PostFormValues = {
   tags: [],
   meta_title: "",
   meta_description: "",
+  meta_keywords: "",
+  is_featured: false,
   slug: "",
   published_at: "",
   update_status: PostUpdateStatus.CURRENT,
@@ -109,6 +111,8 @@ export const usePostForm = () => {
         tags: normalizePostTags(data.tags || []),
         meta_title: data.meta_title || "",
         meta_description: data.meta_description || "",
+        meta_keywords: data.meta_keywords || "",
+        is_featured: data.is_featured ?? false,
         slug: data.slug || "",
         update_status: data.update_status || PostUpdateStatus.CURRENT,
         last_reviewed_at: toDateTimeLocal(

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { ChangeEvent } from "react"
-import { useForm } from "react-hook-form"
+import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useUpdateVariantsPriceMutation } from "./priceHistoryApi"
@@ -10,6 +10,7 @@ import { useGetPhoneByIdQuery } from "./phones.api"
 import MetadataGenerateButton from "./MetadataGenerateButton"
 import { buildMetadataSnapshot } from "./metadataSnapshot"
 import { useRefreshMetadata } from "./useRefreshMetadata"
+import { PRICE_STATUS_LABEL, priceStatusOf } from "./priceStatus"
 import { Checkbox } from "@/components/ui/checkbox"
 import { IPhone } from "./phones.type"
 import { PhoneStatus, BDStatus } from "./phones.constant"
@@ -96,7 +97,7 @@ const UpdatePriceDialog = ({
   const [internalOpen, setInternalOpen] = useState(false)
   const [updateVariantsPrice, { isLoading: isSaving }] =
     useUpdateVariantsPriceMutation()
-  // Price/status changes make the meta title and description stale.
+  // The meta title depends on the price status (official / unofficial / expected).
   const [autoMetadata, setAutoMetadata] = useState(true)
   const { refresh: refreshMetadata, isRefreshing } = useRefreshMetadata()
   const isLoading = isSaving || isRefreshing
@@ -129,6 +130,16 @@ const UpdatePriceDialog = ({
       meta_keywords: phone.meta_keywords || "",
     },
   })
+
+  const statusBefore = priceStatusOf(variants)
+  const watchedVariants = useWatch({ control: form.control, name: "variants" })
+  const statusAfter = priceStatusOf(
+    (watchedVariants ?? []).map((v) => ({
+      official_price: v.official_price,
+      unofficial_price: v.unofficial_price,
+    }))
+  )
+  const statusChanged = statusBefore !== statusAfter
 
   useEffect(() => {
     if (open && fullPhone) {
@@ -180,13 +191,14 @@ const UpdatePriceDialog = ({
 
       toast.success("Prices updated successfully")
 
-      // Regenerate from the saved phone, unless the editor already generated
-      // or edited the meta fields in this dialog (those were just saved).
+      // AI only when the price status changed (the title depends on it). Plain
+      // price edits need nothing: the website builds the price sentence live.
+      // Skipped when the editor generated or edited the meta fields here.
       const dirty = form.formState.dirtyFields
       const metaEdited = Boolean(
         dirty.meta_title || dirty.meta_description || dirty.meta_keywords
       )
-      if (autoMetadata && !metaEdited) {
+      if (autoMetadata && statusChanged && !metaEdited) {
         await refreshMetadata(phone._id, phone.title)
       }
 
@@ -407,10 +419,12 @@ const UpdatePriceDialog = ({
                 className="mt-0.5"
               />
               <span>
-                Update SEO metadata (AI) after saving
+                Regenerate SEO metadata (AI) when the price status changes
                 <span className="block text-xs text-muted-foreground">
-                  Uses the saved prices and BD status. Skipped if you generate
-                  or edit the meta fields below — then your version is saved.
+                  {statusChanged
+                    ? `Price status: ${PRICE_STATUS_LABEL[statusBefore]} → ${PRICE_STATUS_LABEL[statusAfter]} — the AI will rewrite the title after saving.`
+                    : `Price status stays ${PRICE_STATUS_LABEL[statusAfter]} — no AI needed: the website shows the new price automatically.`}{" "}
+                  Skipped if you generate or edit the meta fields below.
                 </span>
               </span>
             </label>
@@ -427,7 +441,7 @@ const UpdatePriceDialog = ({
               />
             </FormFieldWrapper>
             <FormFieldWrapper
-              label="Meta Description"
+              label="Meta Description (specs sentence — the website adds the live price in front)"
               error={form.formState.errors.meta_description?.message}
             >
               <Controller

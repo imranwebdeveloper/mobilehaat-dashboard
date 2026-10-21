@@ -1734,7 +1734,7 @@ export default function PhoneForm(props?: {
                       )}
                     />
                   </FormFieldWrapper>
-                  <FormFieldWrapper label="Meta Description">
+                  <FormFieldWrapper label="Meta Description (specs sentence — the website adds the live price in front)">
                     <Controller
                       control={form.control}
                       name="meta_description"

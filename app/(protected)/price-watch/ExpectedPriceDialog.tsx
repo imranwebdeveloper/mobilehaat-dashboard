@@ -14,8 +14,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useRefreshMetadata } from "../phones/useRefreshMetadata"
 import {
   Select,
   SelectContent,
@@ -72,9 +70,6 @@ const ExpectedPriceDialog = ({
 
   const [calculate, { isLoading: calculating }] = useCalculateExpectedMutation()
   const [save, { isLoading: saving }] = useSaveExpectedPriceMutation()
-  // The expected price appears in the meta description ("expected price ~৳X").
-  const [updateMetadata, setUpdateMetadata] = useState(true)
-  const { refresh: refreshMetadata, isRefreshing } = useRefreshMetadata()
 
   const currencies = ["BDT", ...Object.keys(defaults?.exchangeRatesToBdt ?? {})]
   const defaultRate =
@@ -130,14 +125,10 @@ const ExpectedPriceDialog = ({
         },
       }).unwrap()
       toast.success(`${row.title}: expected price saved`)
+      onOpenChange(false)
     } catch (error) {
       toast.error(errorMessage(error, "Failed to save expected price"))
-      return
     }
-    if (updateMetadata) {
-      await refreshMetadata(row.id, row.title)
-    }
-    onOpenChange(false)
   }
 
   return (
@@ -302,27 +293,18 @@ const ExpectedPriceDialog = ({
           </div>
         </div>
 
-        <label className="flex items-start gap-2 text-sm">
-          <Checkbox
-            checked={updateMetadata}
-            onCheckedChange={(v) => setUpdateMetadata(v === true)}
-            className="mt-0.5"
-          />
-          <span>
-            Update SEO metadata (AI) after saving
-            <span className="block text-xs text-muted-foreground">
-              Rewrites the meta title and description with the new expected
-              price.
-            </span>
-          </span>
-        </label>
+        <p className="text-xs text-muted-foreground">
+          SEO: no AI needed — the website puts the new expected price in the
+          Google description automatically. When the phone launches, use 🚀
+          and the title is regenerated.
+        </p>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || isRefreshing}>
-            {isRefreshing ? "Updating SEO…" : "Save expected price"}
+          <Button onClick={handleSave} disabled={saving}>
+            Save expected price
           </Button>
         </DialogFooter>
       </DialogContent>

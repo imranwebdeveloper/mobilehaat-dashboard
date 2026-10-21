@@ -7,6 +7,7 @@ export interface SnapshotSource {
   approximate_price_bd?: number
   variants?: Array<{
     ram?: number
+    storage?: number
     official_price?: number
     unofficial_price?: number
   }>
@@ -61,6 +62,21 @@ export function buildMetadataSnapshot(
   if (ram !== undefined) body.ram_gb = ram
   const tech = source.network?.technology ?? []
   if (tech.some((t) => t.includes("5G"))) body.is_5g = true
+
+  // Every variant, so the description can name RAM/storage and "starts at" prices.
+  const positive = (value: unknown) => {
+    const n = num(value)
+    return n !== undefined && n > 0 ? n : undefined
+  }
+  const allVariants = variants
+    .map((v) => ({
+      ram_gb: positive(v.ram),
+      storage_gb: positive(v.storage),
+      official_price: positive(v.official_price),
+      unofficial_price: positive(v.unofficial_price),
+    }))
+    .filter((v) => v.ram_gb || v.storage_gb || v.official_price || v.unofficial_price)
+  if (allVariants.length > 0) body.variants = allVariants
 
   return body
 }

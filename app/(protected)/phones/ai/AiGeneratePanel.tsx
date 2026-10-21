@@ -35,6 +35,7 @@ import {
   useDeleteExtractionMutation,
 } from "./ai.api"
 import { mapAiToFormValues } from "./mapToFormValues"
+import { useGenerateAndApplyPhoneMetadataMutation } from "../phones.api"
 import {
   MobileExtraction,
   AiExtractionStatus,
@@ -133,6 +134,8 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
     useGenerateExtractionEditorialMutation()
   const [approveExtraction, { isLoading: isApproving }] =
     useApproveExtractionMutation()
+  const [applyMetadata, { isLoading: isApplyingMetadata }] =
+    useGenerateAndApplyPhoneMetadataMutation()
   const [deleteExtraction, { isLoading: isDeleting }] =
     useDeleteExtractionMutation()
   const [brandLookup, { isLoading: isResolvingBrand }] =
@@ -147,6 +150,7 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
     isRegenerating ||
     isGeneratingEditorial ||
     isApproving ||
+    isApplyingMetadata ||
     isDeleting
 
   const { data: selected } = useGetExtractionByIdQuery(selectedId ?? "", {
@@ -244,11 +248,27 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
 
   const handleApprove = async () => {
     if (!selectedId) return
+    let phoneId: string | undefined
     try {
-      await approveExtraction({ id: selectedId }).unwrap()
+      const result = await approveExtraction({ id: selectedId }).unwrap()
+      const phone = result?.phone as { _id?: string } | undefined
+      phoneId = phone?._id ? String(phone._id) : undefined
       toast.success("Approved. You can now fill the manual form.")
     } catch (err: any) {
       toast.error(err?.data?.message || err?.error || "Approval failed")
+      return
+    }
+    // Editorial no longer writes metadata: generate it from the saved phone.
+    if (!phoneId) return
+    try {
+      await applyMetadata({ phoneId }).unwrap()
+      toast.success("SEO metadata generated and saved.")
+    } catch (err: any) {
+      toast.error(
+        err?.data?.message ||
+          err?.error ||
+          "Metadata generation failed — use Generate metadata on the phone form."
+      )
     }
   }
 

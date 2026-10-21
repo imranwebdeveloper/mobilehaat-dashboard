@@ -171,9 +171,10 @@ export const mapAiToFormValues = (
     Object.values(PhoneCategory).includes(type as PhoneCategory)
   ),
   sources: structure.sources || [],
-  meta_title: editorial?.meta_title || "",
-  meta_description: editorial?.meta_description || "",
-  meta_keywords: editorial?.meta_keywords || "",
+  // Metadata comes from "Generate metadata" (POST /ai/metadata), not from editorial.
+  meta_title: "",
+  meta_description: "",
+  meta_keywords: "",
   thumbnail: "",
   images: [],
   categories: [],

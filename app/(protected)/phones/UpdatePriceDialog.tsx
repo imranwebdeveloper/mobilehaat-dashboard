@@ -9,6 +9,8 @@ import { useUpdateVariantsPriceMutation } from "./priceHistoryApi"
 import { useGetPhoneByIdQuery } from "./phones.api"
 import MetadataGenerateButton from "./MetadataGenerateButton"
 import { buildMetadataSnapshot } from "./metadataSnapshot"
+import { useRefreshMetadata } from "./useRefreshMetadata"
+import { Checkbox } from "@/components/ui/checkbox"
 import { IPhone } from "./phones.type"
 import { PhoneStatus, BDStatus } from "./phones.constant"
 import {
@@ -92,7 +94,12 @@ const UpdatePriceDialog = ({
   onUpdated,
 }: UpdatePriceDialogProps) => {
   const [internalOpen, setInternalOpen] = useState(false)
-  const [updateVariantsPrice, { isLoading }] = useUpdateVariantsPriceMutation()
+  const [updateVariantsPrice, { isLoading: isSaving }] =
+    useUpdateVariantsPriceMutation()
+  // Price/status changes make the meta title and description stale.
+  const [autoMetadata, setAutoMetadata] = useState(true)
+  const { refresh: refreshMetadata, isRefreshing } = useRefreshMetadata()
+  const isLoading = isSaving || isRefreshing
 
   const open = controlledOpen ?? internalOpen
   const setOpen = controlledOnOpenChange ?? setInternalOpen
@@ -172,6 +179,17 @@ const UpdatePriceDialog = ({
       }).unwrap()
 
       toast.success("Prices updated successfully")
+
+      // Regenerate from the saved phone, unless the editor already generated
+      // or edited the meta fields in this dialog (those were just saved).
+      const dirty = form.formState.dirtyFields
+      const metaEdited = Boolean(
+        dirty.meta_title || dirty.meta_description || dirty.meta_keywords
+      )
+      if (autoMetadata && !metaEdited) {
+        await refreshMetadata(phone._id, phone.title)
+      }
+
       setOpen(false)
       onUpdated?.()
     } catch (error: unknown) {
@@ -341,9 +359,7 @@ const UpdatePriceDialog = ({
 
           <div className="space-y-3 rounded-lg border p-4">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium">
-                SEO Meta (optional — update if it mentions the old price)
-              </span>
+              <span className="text-sm font-medium">SEO Meta</span>
               <MetadataGenerateButton
                 missingHint="Phone details are still loading"
                 buildSnapshot={() => {
@@ -358,6 +374,7 @@ const UpdatePriceDialog = ({
                       approximate_price_bd: fullPhone.approximate_price_bd,
                       variants: dialogVariants.map((v, i) => ({
                         ram: fullPhone.variants?.[i]?.ram,
+                        storage: fullPhone.variants?.[i]?.storage,
                         official_price: v.official_price,
                         unofficial_price: v.unofficial_price,
                       })),
@@ -383,6 +400,20 @@ const UpdatePriceDialog = ({
                 }}
               />
             </div>
+            <label className="flex items-start gap-2 text-sm">
+              <Checkbox
+                checked={autoMetadata}
+                onCheckedChange={(v) => setAutoMetadata(v === true)}
+                className="mt-0.5"
+              />
+              <span>
+                Update SEO metadata (AI) after saving
+                <span className="block text-xs text-muted-foreground">
+                  Uses the saved prices and BD status. Skipped if you generate
+                  or edit the meta fields below — then your version is saved.
+                </span>
+              </span>
+            </label>
             <FormFieldWrapper
               label="Meta Title"
               error={form.formState.errors.meta_title?.message}
@@ -431,7 +462,11 @@ const UpdatePriceDialog = ({
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Update Prices"}
+              {isRefreshing
+                ? "Updating SEO..."
+                : isSaving
+                  ? "Saving..."
+                  : "Update Prices"}
             </Button>
           </DialogFooter>
         </form>

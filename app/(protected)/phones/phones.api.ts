@@ -17,6 +17,13 @@ export interface GenerateMetadataBody {
   chipset?: string
   ram_gb?: number
   is_5g?: boolean
+  /** Every RAM/storage variant with its BD prices — the backend prefers this over the single-price fields. */
+  variants?: Array<{
+    ram_gb?: number
+    storage_gb?: number
+    official_price?: number
+    unofficial_price?: number
+  }>
   guidelines?: string
 }
 
@@ -82,6 +89,19 @@ export const phoneApi = configApi.injectEndpoints({
         body,
       }),
     }),
+
+    /** Generate metadata from the saved phone (all variants) and save it to the phone. */
+    generateAndApplyPhoneMetadata: build.mutation<
+      ApiResponse<GeneratedMetadata>,
+      { phoneId: string; guidelines?: string }
+    >({
+      query: ({ phoneId, guidelines }) => ({
+        url: `/ai/metadata/${phoneId}?apply=true`,
+        method: "POST",
+        body: guidelines ? { guidelines } : {},
+      }),
+      invalidatesTags: ["Phone"],
+    }),
   }),
 })
 
@@ -92,4 +112,5 @@ export const {
   useUpdatePhoneMutation,
   useDeletePhoneMutation,
   useGeneratePhoneMetadataMutation,
+  useGenerateAndApplyPhoneMetadataMutation,
 } = phoneApi

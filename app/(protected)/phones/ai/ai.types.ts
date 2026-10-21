@@ -135,9 +135,10 @@ export interface AiStructure {
 }
 
 export interface AiEditorial {
-  meta_title: string
-  meta_description: string
-  meta_keywords: string
+  /** Only on extractions generated before editorial stopped writing metadata; ignored. */
+  meta_title?: string
+  meta_description?: string
+  meta_keywords?: string
   pros: string[]
   cons: string[]
   types?: string[]

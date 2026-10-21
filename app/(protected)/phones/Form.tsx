@@ -1630,7 +1630,7 @@ export default function PhoneForm(props?: {
                       )}
                     />
                   </FormFieldWrapper>
-                  <FormFieldWrapper label="Approx. BD Price">
+                  <FormFieldWrapper label="Main BD Price (upcoming: expected price · available: set automatically to the lowest variant price)">
                     <Controller
                       control={form.control}
                       name="approximate_price_bd"

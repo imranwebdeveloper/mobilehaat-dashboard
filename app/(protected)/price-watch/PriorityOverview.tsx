@@ -314,6 +314,10 @@ const PriorityOverview = () => {
         paginate={data?.paginate}
         isLoading={isLoading || isFetching}
         isError={isError}
+        search={query.search}
+        onSearchChange={(search) =>
+          updateQuery({ search: search || undefined })
+        }
         onPageChange={(page) => setQuery((q) => ({ ...q, page }))}
         onLimitChange={(limit) => updateQuery({ limit })}
       />

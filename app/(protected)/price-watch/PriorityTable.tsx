@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
 import {
@@ -9,8 +10,12 @@ import {
   Flame,
   History,
   Rocket,
+  Search,
   TriangleAlert,
+  X,
 } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { useDebounce } from "@/hooks/useDebounce"
 import {
   Table,
   TableBody,
@@ -241,11 +246,68 @@ const PriorityRow = ({ row, rank }: { row: PhonePriority; rank: number }) => {
   )
 }
 
+/** Search box in the table header; waits 300 ms after typing before querying. */
+const PrioritySearch = ({
+  value,
+  total,
+  onChange,
+}: {
+  value?: string
+  total?: number
+  onChange: (value: string) => void
+}) => {
+  const [text, setText] = useState(value ?? "")
+  const debounced = useDebounce(text, 300)
+
+  // Follow outside changes (e.g. the Reset button clears the search).
+  useEffect(() => {
+    setText(value ?? "")
+  }, [value])
+
+  useEffect(() => {
+    if (debounced.trim() !== (value ?? "")) onChange(debounced.trim())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debounced])
+
+  return (
+    <div className="flex items-center gap-3 border-b bg-background px-3 py-2">
+      <div className="relative w-full max-w-sm">
+        <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Search phone — e.g. redmi note 17"
+          aria-label="Search phones"
+          maxLength={100}
+          className="h-9 pr-8 pl-8"
+        />
+        {text && (
+          <button
+            type="button"
+            onClick={() => setText("")}
+            className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:text-foreground"
+            aria-label="Clear search"
+          >
+            <X className="size-4" />
+          </button>
+        )}
+      </div>
+      {total !== undefined && (
+        <span className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">
+          {total.toLocaleString()} {total === 1 ? "phone" : "phones"}
+        </span>
+      )}
+    </div>
+  )
+}
+
 const PriorityTable = ({
   rows,
   paginate,
   isLoading,
   isError,
+  search,
+  onSearchChange,
   onPageChange,
   onLimitChange,
 }: {
@@ -253,6 +315,8 @@ const PriorityTable = ({
   paginate?: IPagination
   isLoading: boolean
   isError: boolean
+  search?: string
+  onSearchChange: (search: string) => void
   onPageChange: (page: number) => void
   onLimitChange: (limit: number) => void
 }) => {
@@ -260,53 +324,62 @@ const PriorityTable = ({
 
   return (
     <div className="flex flex-col">
-      <div className="overflow-auto rounded-lg border bg-background">
-        <TooltipProvider>
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-muted">
-              <TableRow>
-                {COLUMNS.map((c) => (
-                  <TableHead key={c} className="bg-secondary">
-                    {c}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                Array.from({ length: 8 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={COLUMNS.length}>
-                      <Skeleton className="h-8 w-full" />
+      <div className="overflow-hidden rounded-lg border bg-background">
+        <PrioritySearch
+          value={search}
+          total={paginate?.total}
+          onChange={onSearchChange}
+        />
+        <div className="overflow-auto">
+          <TooltipProvider>
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-muted">
+                <TableRow>
+                  {COLUMNS.map((c) => (
+                    <TableHead key={c} className="bg-secondary">
+                      {c}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 8 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell colSpan={COLUMNS.length}>
+                        <Skeleton className="h-8 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : isError ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={COLUMNS.length}
+                      className="py-10 text-center text-muted-foreground"
+                    >
+                      Failed to load phones.
                     </TableCell>
                   </TableRow>
-                ))
-              ) : isError ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={COLUMNS.length}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    Failed to load phones.
-                  </TableCell>
-                </TableRow>
-              ) : rows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={COLUMNS.length}
-                    className="py-10 text-center text-muted-foreground"
-                  >
-                    No phones match these filters.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                rows.map((row, i) => (
-                  <PriorityRow key={row.id} row={row} rank={offset + i + 1} />
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TooltipProvider>
+                ) : rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={COLUMNS.length}
+                      className="py-10 text-center text-muted-foreground"
+                    >
+                      {search
+                        ? `No phones match "${search}" with these filters.`
+                        : "No phones match these filters."}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  rows.map((row, i) => (
+                    <PriorityRow key={row.id} row={row} rank={offset + i + 1} />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TooltipProvider>
+        </div>
       </div>
       <PriorityPagination
         paginate={paginate}

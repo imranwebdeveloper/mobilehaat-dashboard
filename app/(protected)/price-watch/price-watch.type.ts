@@ -135,6 +135,8 @@ export interface PriorityQuery {
   brand?: string
   dueOnly?: boolean
   needsData?: boolean
+  /** Phone name / brand / slug; every word must match. */
+  search?: string
   page?: number
   limit?: number
 }

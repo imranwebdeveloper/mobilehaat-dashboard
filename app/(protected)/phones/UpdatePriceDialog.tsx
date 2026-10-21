@@ -131,13 +131,15 @@ const UpdatePriceDialog = ({
     },
   })
 
-  const statusBefore = priceStatusOf(variants)
+  const statusBefore = priceStatusOf(variants, phone.bd_status)
   const watchedVariants = useWatch({ control: form.control, name: "variants" })
+  const watchedBdStatus = useWatch({ control: form.control, name: "bd_status" })
   const statusAfter = priceStatusOf(
     (watchedVariants ?? []).map((v) => ({
       official_price: v.official_price,
       unofficial_price: v.unofficial_price,
-    }))
+    })),
+    watchedBdStatus
   )
   const statusChanged = statusBefore !== statusAfter
 

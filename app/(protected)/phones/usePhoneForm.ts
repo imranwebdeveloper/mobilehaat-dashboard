@@ -108,8 +108,12 @@ const sanitizePhonePayload = (data: PhoneFormValues) => {
           others: data.features.others || [],
         }
       : undefined,
-    pros: data.pros || [],
-    cons: data.cons || [],
+    pros: [
+      ...new Set((data.pros || []).map((item) => item.trim()).filter(Boolean)),
+    ],
+    cons: [
+      ...new Set((data.cons || []).map((item) => item.trim()).filter(Boolean)),
+    ],
     extras: data.extras || [],
     sources: data.sources || [],
   }

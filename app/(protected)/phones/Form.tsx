@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, Trash2 } from "lucide-react"
 import CreateAbleMultiSelect from "@/components/common/select/CreateAbleMultiSelect"
+import StringListEditor from "@/components/common/StringListEditor"
 import {
   convertSelectOptionToString,
   convertSelectOptionToStringArray,
@@ -1295,11 +1296,12 @@ export default function PhoneForm(props?: {
                       control={form.control}
                       name="pros"
                       render={({ field }) => (
-                        <CreateAbleMultiSelect
-                          value={convertStringArrayToSelectOption(field.value)}
-                          onChange={(v) =>
-                            field.onChange(convertSelectOptionToStringArray(v))
-                          }
+                        <StringListEditor
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. Excellent battery life"
+                          addLabel="Add Pro"
+                          emptyText="No pros added yet."
                         />
                       )}
                     />
@@ -1309,11 +1311,12 @@ export default function PhoneForm(props?: {
                       control={form.control}
                       name="cons"
                       render={({ field }) => (
-                        <CreateAbleMultiSelect
-                          value={convertStringArrayToSelectOption(field.value)}
-                          onChange={(v) =>
-                            field.onChange(convertSelectOptionToStringArray(v))
-                          }
+                        <StringListEditor
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="e.g. Average ultrawide camera"
+                          addLabel="Add Con"
+                          emptyText="No cons added yet."
                         />
                       )}
                     />

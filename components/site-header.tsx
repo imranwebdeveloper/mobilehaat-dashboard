@@ -27,7 +27,7 @@ import {
   UserRoundIcon,
   ChevronsUpDownIcon,
 } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { signOutAndRevoke } from "@/lib/sign-out"
 import { NotificationBell } from "./notification"
 import { ThemeToggle } from "./ThemeToggle"
 import Link from "next/link"
@@ -170,7 +170,7 @@ export function SiteHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 variant="destructive"
-                onClick={() => signOut({ redirect: true })}
+                onClick={() => void signOutAndRevoke(auth?.refresh_token)}
               >
                 <LogOutIcon />
                 Log out

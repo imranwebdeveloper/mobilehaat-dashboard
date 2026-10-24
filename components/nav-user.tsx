@@ -22,7 +22,7 @@ import {
   CircleUserRoundIcon,
   LogOutIcon,
 } from "lucide-react"
-import { signOut } from "next-auth/react"
+import { signOutAndRevoke } from "@/lib/sign-out"
 
 export function NavUser() {
   const { auth } = useAppSelector((state) => state.global)
@@ -89,7 +89,9 @@ export function NavUser() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => signOut({ redirect: true })}>
+            <DropdownMenuItem
+              onClick={() => void signOutAndRevoke(auth?.refresh_token)}
+            >
               <LogOutIcon />
               Log out
             </DropdownMenuItem>

@@ -16,14 +16,12 @@ export default function Icon() {
   return new ImageResponse(
     <div
       style={{
-        fontSize: 24,
-        background: "white",
+        // The favicon is its own rounded tile, so no backdrop here
         width: "100%",
         height: "100%",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 4,
       }}
     >
       <img src={src} alt="MobileHaat" width={32} height={32} />

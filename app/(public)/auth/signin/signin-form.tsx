@@ -62,7 +62,12 @@ export function SigninForm() {
             <FieldGroup>
               {/* Header */}
               <div className="flex flex-col items-center gap-2 text-center">
-                <img src="/logo.png" alt="MobileHaat" className="h-12 w-auto" />
+                <img src="/logo.svg" alt="MobileHaat" className="h-12 w-auto dark:hidden" />
+                <img
+                  src="/logo-dark.svg"
+                  alt="MobileHaat"
+                  className="hidden h-12 w-auto dark:block"
+                />
                 <h1 className="text-2xl font-bold">Welcome Back</h1>
                 <p className="text-muted-foreground">Login to your account</p>
               </div>

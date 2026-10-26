@@ -194,11 +194,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <Link href="/">
                 <Image
-                  src="/logo.png"
+                  src="/logo.svg"
                   alt={siteName || "MobileHaat"}
-                  width={626}
-                  height={96}
-                  className="h-auto w-full"
+                  width={551}
+                  height={133}
+                  className="h-10 w-auto dark:hidden"
+                />
+                <Image
+                  src="/logo-dark.svg"
+                  alt={siteName || "MobileHaat"}
+                  width={551}
+                  height={133}
+                  className="hidden h-10 w-auto dark:block"
                 />
               </Link>
             </SidebarMenuButton>

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "sonner"
-import { Calculator } from "lucide-react"
+import { Calculator, Globe } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,8 @@ import {
   PhonePriority,
 } from "./price-watch.type"
 import { CONFIDENCE, CURRENCY_SYMBOL } from "./priority.constant"
+import { AiPriceCheckModal } from "../phones/ai/AiPriceCheckModal"
+import { useGetPhoneByIdQuery } from "../phones/phones.api"
 
 const errorMessage = (error: unknown, fallback: string) =>
   (error as { data?: { message?: string } })?.data?.message || fallback
@@ -56,6 +58,11 @@ const ExpectedPriceDialog = ({
     current?.confidence ?? "RUMOUR"
   )
   const [launchBd, setLaunchBd] = useState(toDateInput(current?.launch_bd))
+  const [showAiModal, setShowAiModal] = useState(false)
+
+  // Fetch full phone data for variants and model
+  const { data: phoneRes } = useGetPhoneByIdQuery(row.id, { skip: !open })
+  const fullPhone = phoneRes?.data
 
   // Calculator
   const { data: defaultsRes } = useGetExpectedDefaultsQuery(null, {
@@ -131,184 +138,225 @@ const ExpectedPriceDialog = ({
     }
   }
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[560px]">
-        <DialogHeader>
-          <DialogTitle>Expected price — {row.title}</DialogTitle>
-          <DialogDescription>
-            Shown on the site as the expected BD price until the phone launches
-            in Bangladesh.
-          </DialogDescription>
-        </DialogHeader>
+  const handleAiPriceSelected = (data: { price: number; basis?: string; confidence?: string }) => {
+    setPrice(String(data.price))
+    if (data.basis) setBasis(data.basis)
+    if (data.confidence) setConfidence(data.confidence as ExpectedPriceConfidence)
+    setShowAiModal(false)
+  }
 
-        {/* Calculator */}
-        <div className="space-y-3 rounded-lg border bg-muted/40 p-3">
-          <p className="flex items-center gap-2 text-sm font-medium">
-            <Calculator className="size-4" /> Calculate from a foreign price
-          </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            <div className="col-span-2 space-y-1 sm:col-span-1">
-              <Label htmlFor="ep-amount">Price</Label>
+  const variantsForAi = fullPhone?.variants?.map((v) => ({
+    ram: v.ram,
+    storage: v.storage,
+    official_price: v.official_price,
+    unofficial_price: v.unofficial_price,
+    _id: v._id,
+  })) ?? []
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="size-4" />
+              Expected price — {row.title}
+            </DialogTitle>
+            <DialogDescription>
+              Shown on the site as the expected BD price until the phone launches
+              in Bangladesh.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Calculator */}
+          <div className="space-y-3 rounded-lg border bg-muted/40 p-3">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Calculator className="size-4" /> Calculate from a foreign price
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="col-span-2 space-y-1 sm:col-span-1">
+                <Label htmlFor="ep-amount">Price</Label>
+                <Input
+                  id="ep-amount"
+                  type="number"
+                  min={0}
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="29999"
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Currency</Label>
+                <Select
+                  value={currency}
+                  onValueChange={(v) => {
+                    setCurrency(v)
+                    setRate("")
+                  }}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ep-rate">Rate (৳)</Label>
+                <Input
+                  id="ep-rate"
+                  type="number"
+                  step="0.01"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  placeholder={defaultRate ? String(defaultRate) : ""}
+                  disabled={currency === "BDT"}
+                  className="bg-background"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ep-factor">BD factor</Label>
+                <Input
+                  id="ep-factor"
+                  type="number"
+                  step="0.01"
+                  value={factor}
+                  onChange={(e) => setFactor(e.target.value)}
+                  placeholder={String(defaults?.defaultBrandFactor ?? "")}
+                  className="bg-background"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Empty rate / factor use the defaults shown — check the rate against
+              today&apos;s market before saving.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleCalculate}
+                disabled={calculating}
+              >
+                Calculate
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAiModal(true)}
+                disabled={!row.title || !row.brand?.name}
+              >
+                <Globe className="size-3.5 mr-1" />
+                Research Global Prices
+              </Button>
+              {result && (
+                <>
+                  <span className="text-sm tabular-nums">
+                    {result.amount.toLocaleString()} {result.currency} ×{" "}
+                    {result.rate} × {result.factor} = ৳
+                    {result.raw.toLocaleString()} →{" "}
+                    <strong>৳{result.rounded.toLocaleString()}</strong>
+                  </span>
+                  <Button type="button" size="sm" onClick={applyResult}>
+                    Use ৳{result.rounded.toLocaleString()}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Saved values */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="ep-price">Expected BD price (৳)</Label>
               <Input
-                id="ep-amount"
+                id="ep-price"
                 type="number"
-                min={0}
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="29999"
-                className="bg-background"
+                min={1}
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
               />
             </div>
             <div className="space-y-1">
-              <Label>Currency</Label>
+              <Label>Confidence</Label>
               <Select
-                value={currency}
-                onValueChange={(v) => {
-                  setCurrency(v)
-                  setRate("")
-                }}
+                value={confidence}
+                onValueChange={(v) => setConfidence(v as ExpectedPriceConfidence)}
               >
-                <SelectTrigger className="bg-background">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="ep-rate">Rate (৳)</Label>
-              <Input
-                id="ep-rate"
-                type="number"
-                step="0.01"
-                value={rate}
-                onChange={(e) => setRate(e.target.value)}
-                placeholder={defaultRate ? String(defaultRate) : ""}
-                disabled={currency === "BDT"}
-                className="bg-background"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="ep-factor">BD factor</Label>
-              <Input
-                id="ep-factor"
-                type="number"
-                step="0.01"
-                value={factor}
-                onChange={(e) => setFactor(e.target.value)}
-                placeholder={String(defaults?.defaultBrandFactor ?? "")}
-                className="bg-background"
-              />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Empty rate / factor use the defaults shown — check the rate against
-            today&apos;s market before saving.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={handleCalculate}
-              disabled={calculating}
-            >
-              Calculate
-            </Button>
-            {result && (
-              <>
-                <span className="text-sm tabular-nums">
-                  {result.amount.toLocaleString()} {result.currency} ×{" "}
-                  {result.rate} × {result.factor} = ৳
-                  {result.raw.toLocaleString()} →{" "}
-                  <strong>৳{result.rounded.toLocaleString()}</strong>
-                </span>
-                <Button type="button" size="sm" onClick={applyResult}>
-                  Use ৳{result.rounded.toLocaleString()}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Saved values */}
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="ep-price">Expected BD price (৳)</Label>
-            <Input
-              id="ep-price"
-              type="number"
-              min={1}
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label>Confidence</Label>
-            <Select
-              value={confidence}
-              onValueChange={(v) => setConfidence(v as ExpectedPriceConfidence)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {(Object.keys(CONFIDENCE) as ExpectedPriceConfidence[]).map(
-                  (c) => (
-                    <SelectItem key={c} value={c}>
-                      {CONFIDENCE[c].label}
-                      <span className="ml-1 text-muted-foreground">
-                        — {CONFIDENCE[c].hint}
-                      </span>
-                    </SelectItem>
-                  )
-                )}
+                  {(Object.keys(CONFIDENCE) as ExpectedPriceConfidence[]).map(
+                    (c) => (
+                      <SelectItem key={c} value={c}>
+                        {CONFIDENCE[c].label}
+                        <span className="ml-1 text-muted-foreground">
+                          — {CONFIDENCE[c].hint}
+                        </span>
+                      </SelectItem>
+                    )
+                  )}
               </SelectContent>
             </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ep-basis">Basis</Label>
+              <Input
+                id="ep-basis"
+                value={basis}
+                maxLength={200}
+                onChange={(e) => setBasis(e.target.value)}
+                placeholder="India launch ₹29,999"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ep-launch">Expected BD launch</Label>
+              <Input
+                id="ep-launch"
+                type="date"
+                value={launchBd}
+                onChange={(e) => setLaunchBd(e.target.value)}
+              />
+            </div>
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="ep-basis">Basis</Label>
-            <Input
-              id="ep-basis"
-              value={basis}
-              maxLength={200}
-              onChange={(e) => setBasis(e.target.value)}
-              placeholder="India launch ₹29,999"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="ep-launch">Expected BD launch</Label>
-            <Input
-              id="ep-launch"
-              type="date"
-              value={launchBd}
-              onChange={(e) => setLaunchBd(e.target.value)}
-            />
-          </div>
-        </div>
 
-        <p className="text-xs text-muted-foreground">
-          SEO: no AI needed — the website puts the new expected price in the
-          Google description automatically. When the phone launches, use 🚀
-          and the title is regenerated.
-        </p>
+          <p className="text-xs text-muted-foreground">
+            SEO: no AI needed — the website puts the new expected price in the
+            Google description automatically. When the phone launches, use 🚀
+            and the title is regenerated.
+          </p>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            Save expected price
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving}>
+              Save expected price
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AiPriceCheckModal
+        open={showAiModal}
+        onOpenChange={setShowAiModal}
+        phoneTitle={row.title}
+        brand={fullPhone?.brand?.name ?? row.brand?.name ?? ""}
+        model={fullPhone?.model ?? ""}
+        variants={variantsForAi}
+        mode="expected"
+        onPriceSelected={handleAiPriceSelected}
+      />
+    </>
   )
 }
 

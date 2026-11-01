@@ -1,6 +1,7 @@
 import { configApi } from "@/config/reduxApiConfig"
 import { ApiResponse } from "@/store/global.type"
 import {
+  AiCheckCreateBody,
   CalculateExpectedBody,
   ExpectedCalculation,
   ExpectedDefaults,
@@ -8,6 +9,7 @@ import {
   PriorityQuery,
   PriorityResponse,
   SaveExpectedPriceBody,
+  PriceAiCheckResult,
 } from "./price-watch.type"
 
 export const priceWatchApi = configApi.injectEndpoints({
@@ -72,6 +74,28 @@ export const priceWatchApi = configApi.injectEndpoints({
       }),
       invalidatesTags: ["PriceWatch", "Phone"],
     }),
+
+    aiCheckPrice: build.mutation<ApiResponse<PriceAiCheckResult>, { phoneId: string; force?: boolean }>({
+      query: ({ phoneId, force }) => ({
+        url: `/price-watch/${phoneId}/ai-check`,
+        method: "POST",
+        params: { force: force ? "true" : undefined },
+      }),
+      invalidatesTags: ["PriceWatch"],
+    }),
+
+    aiCheckCreate: build.mutation<ApiResponse<PriceAiCheckResult>, AiCheckCreateBody>({
+      query: (body) => ({
+        url: `/price-watch/ai-check-create`,
+        method: "POST",
+        body,
+      }),
+    }),
+
+    getAiCheckLatest: build.query<ApiResponse<PriceAiCheckResult | null>, string>({
+      query: (phoneId) => ({ url: `/price-watch/${phoneId}/ai-check/latest` }),
+      providesTags: ["PriceWatch"],
+    }),
   }),
 })
 
@@ -83,4 +107,7 @@ export const {
   useGetExpectedDefaultsQuery,
   useCalculateExpectedMutation,
   useSaveExpectedPriceMutation,
+  useAiCheckPriceMutation,
+  useAiCheckCreateMutation,
+  useGetAiCheckLatestQuery,
 } = priceWatchApi

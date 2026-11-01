@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import type { ChangeEvent } from "react"
+import { useState, type ChangeEvent } from "react"
 import {
   Controller,
   useFieldArray,
@@ -27,7 +27,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Calculator } from "lucide-react"
 import CreateAbleMultiSelect from "@/components/common/select/CreateAbleMultiSelect"
 import StringListEditor from "@/components/common/StringListEditor"
 import {
@@ -57,6 +57,7 @@ import {
 import SingleSelect from "@/components/common/select/SingleSelect"
 import FullWidthLoading from "@/components/common/loading/FullWidthLoading"
 import PhoneKeyValueEditor from "./PhoneKeyValueEditor"
+import { AiPriceCheckModal } from "./ai/AiPriceCheckModal"
 import MetadataGenerateButton from "./MetadataGenerateButton"
 import { buildMetadataSnapshot } from "./metadataSnapshot"
 
@@ -322,6 +323,41 @@ export default function PhoneForm(props?: {
     onDraftConsumed: props?.onDraftConsumed,
   })
 
+  const [showPriceCheckModal, setShowPriceCheckModal] = useState(false)
+
+  const phoneTitle = form.watch("title")
+  const phoneBrand = form.watch("brand")
+  const phoneModel = form.watch("model")
+  const variants = form.watch("variants") || []
+
+  const handlePriceSelected = (data: {
+    type: "expected" | "variant"
+    price: number
+    basis?: string
+    confidence?: string
+    variantIndex?: number
+    official_price?: number
+    unofficial_price?: number
+  }) => {
+    if (data.type === "expected") {
+      form.setValue("approximate_price_bd", data.price)
+    } else if (data.type === "variant" && data.variantIndex !== undefined && data.variantIndex < variants.length) {
+      if (data.official_price !== undefined) {
+        form.setValue(`variants.${data.variantIndex}.official_price`, data.official_price)
+      }
+      if (data.unofficial_price !== undefined) {
+        form.setValue(`variants.${data.variantIndex}.unofficial_price`, data.unofficial_price)
+      }
+      // If neither official nor unofficial provided, use price for unofficial
+      if (data.official_price === undefined && data.unofficial_price === undefined) {
+        form.setValue(`variants.${data.variantIndex}.unofficial_price`, data.price)
+      }
+    } else {
+      form.setValue("approximate_price_bd", data.price)
+    }
+    setShowPriceCheckModal(false)
+  }
+
   const phoneTypes = form.watch("phone_type") || []
   const phoneCategories = form.watch("types") || []
   const extrasValue = form.watch("extras") || []
@@ -486,23 +522,36 @@ export default function PhoneForm(props?: {
 
               {/* Variants */}
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
                   <CardTitle>Pricing Variants</CardTitle>
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={() =>
-                      appendVariant({
-                        ram: 0,
-                        storage: 0,
-                        official_price: 0,
-                        unofficial_price: 0,
-                        currency: "BDT",
-                      })
-                    }
-                  >
-                    <Plus className="mr-2 h-4 w-4" /> Add Variant
-                  </Button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPriceCheckModal(true)}
+                      disabled={!phoneTitle || !phoneBrand || !phoneModel || variants.length === 0}
+                      className="gap-1"
+                    >
+                      <Calculator className="h-4 w-4" />
+                      Check Market Price
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() =>
+                        appendVariant({
+                          ram: 0,
+                          storage: 0,
+                          official_price: 0,
+                          unofficial_price: 0,
+                          currency: "BDT",
+                        })
+                      }
+                    >
+                      <Plus className="mr-2 h-4 w-4" /> Add Variant
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {variantFields.map((field, index) => (
@@ -1760,10 +1809,21 @@ export default function PhoneForm(props?: {
                     />
                   </FormFieldWrapper>
                 </CardContent>
-              </Card>
+</Card>
             </div>
           </div>
         </form>
+
+        <AiPriceCheckModal
+          open={showPriceCheckModal}
+          onOpenChange={setShowPriceCheckModal}
+          phoneTitle={phoneTitle}
+          brand={phoneBrand}
+          model={phoneModel}
+          variants={variants}
+          mode="bd-prices"
+          onPriceSelected={handlePriceSelected}
+        />
       </div>
     </FormProvider>
   )

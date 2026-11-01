@@ -140,3 +140,64 @@ export interface PriorityQuery {
   page?: number
   limit?: number
 }
+
+export interface PriceAiCheckEntry {
+  variant: string | null
+  variantId: string | null
+  price: number
+  currency: string
+  market?: string
+  source_url: string
+  source_name: string | null
+  date: string | null
+  verified: boolean
+}
+
+export type AiSuggestionKind = "OFFICIAL" | "UNOFFICIAL" | "EXPECTED" | "NONE"
+
+export interface AiSuggestion {
+  kind: AiSuggestionKind
+  variants: { variantId: string; label: string; price: number }[]
+  expected: {
+    price: number
+    basis: string
+    confidence: ExpectedPriceConfidence
+    calculation: any
+  } | null
+  lowestBdt: number | null
+  changePct: number | null
+  reason: string
+}
+
+export type AiCheckFlag = "BIG_CHANGE" | "LOOKS_LAUNCHED" | "UNMATCHED_VARIANTS" | "UNVERIFIED_SOURCE"
+
+export interface PriceAiCheckResult {
+  id: string
+  checked_at: string
+  cached: boolean
+  model: string
+  bd_official: PriceAiCheckEntry[]
+  bd_unofficial: PriceAiCheckEntry[]
+  global: PriceAiCheckEntry[]
+  bd_launched: boolean | null
+  notes: string | null
+  current_price: number | null
+  suggestion: AiSuggestion
+  flags: AiCheckFlag[]
+  sources: { title: string; uri: string }[]
+  queries: string[]
+}
+
+export interface AiCheckVariantDto {
+  ram: number
+  storage: number
+  official_price?: number
+  unofficial_price?: number
+}
+
+export interface AiCheckCreateBody {
+  title: string
+  brand: string
+  model: string
+  variants: AiCheckVariantDto[]
+}

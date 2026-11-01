@@ -521,7 +521,7 @@ export function AiPriceCheckModal({
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
                 <Globe className="size-12 mx-auto mb-3 opacity-50" />
-                <p>Click "Research Market Prices" to fetch current prices from AI</p>
+                <p>Click &ldquo;Research Market Prices&rdquo; to fetch current prices from AI</p>
               </CardContent>
             </Card>
           )}

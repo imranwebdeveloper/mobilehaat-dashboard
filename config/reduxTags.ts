@@ -16,6 +16,7 @@ export const reduxTags = [
   "Phone",
   "PhoneCategory",
   "BudgetPhone",
+  "BestPhone",
   "Newsletter",
   "Comparison",
   "PhoneComment",

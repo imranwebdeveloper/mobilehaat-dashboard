@@ -25,6 +25,7 @@ import {
   Newspaper,
   Mail,
   WalletIcon,
+  Trophy,
   ArrowLeftRight,
   PenTool,
   Store,
@@ -79,6 +80,12 @@ const navGroups: {
         url: "/budget-phones",
         icon: <WalletIcon />,
         permission: Permissions.BUDGET_PHONE_READ,
+      },
+      {
+        title: "Best Phones",
+        url: "/best-phones",
+        icon: <Trophy />,
+        permission: Permissions.BEST_PHONE_READ,
       },
       {
         title: "Comparisons",

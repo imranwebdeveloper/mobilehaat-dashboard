@@ -39,6 +39,7 @@ const routeTitles: Record<string, string> = {
   "/brands": "Brands",
   "/phone-comments": "Phone Comments",
   "/budget-phones": "Budget Phones",
+  "/best-phones": "Best Phones",
   "/comparisons": "Comparisons",
   "/posts": "Posts",
   "/post-categories": "Categories",

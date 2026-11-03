@@ -20,5 +20,5 @@ const Wrapper = () => {
 }
 
 export default withAuth(Wrapper, {
-  requiredPermissions: [Permissions.BEST_PHONE_READ],
+  requiredPermissions: [Permissions.BUDGET_PHONE_READ],
 })

@@ -67,7 +67,7 @@ const TableHeader = () => {
             </SelectContent>
           </Select>
 
-          <Permission permission={Permissions.BEST_PHONE_CREATE}>
+          <Permission permission={Permissions.BUDGET_PHONE_CREATE}>
             <Button onClick={() => router.push("/best-phones/create")}>
               <Plus className="h-5 w-5" /> Add Best Phone Page
             </Button>

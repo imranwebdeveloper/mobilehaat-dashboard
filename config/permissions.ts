@@ -11,7 +11,6 @@ export enum PermissionResource {
   PHONE = "phone",
   PHONE_CATEGORY = "phone-category",
   BUDGET_PHONE = "budget-phone",
-  BEST_PHONE = "best-phone",
   COMPARISON = "comparison",
 
   PHONE_COMMENT = "phone-comment",
@@ -104,12 +103,6 @@ export const Permissions = {
   BUDGET_PHONE_CREATE: `${PermissionResource.BUDGET_PHONE}:${PermissionAction.CREATE}:${PermissionScope.ANY}`,
   BUDGET_PHONE_UPDATE: `${PermissionResource.BUDGET_PHONE}:${PermissionAction.UPDATE}:${PermissionScope.ANY}`,
   BUDGET_PHONE_DELETE: `${PermissionResource.BUDGET_PHONE}:${PermissionAction.DELETE}:${PermissionScope.ANY}`,
-
-  // BEST PHONE
-  BEST_PHONE_READ: `${PermissionResource.BEST_PHONE}:${PermissionAction.READ}:${PermissionScope.ANY}`,
-  BEST_PHONE_CREATE: `${PermissionResource.BEST_PHONE}:${PermissionAction.CREATE}:${PermissionScope.ANY}`,
-  BEST_PHONE_UPDATE: `${PermissionResource.BEST_PHONE}:${PermissionAction.UPDATE}:${PermissionScope.ANY}`,
-  BEST_PHONE_DELETE: `${PermissionResource.BEST_PHONE}:${PermissionAction.DELETE}:${PermissionScope.ANY}`,
 
   // COMPARISON
   COMPARISON_READ: `${PermissionResource.COMPARISON}:${PermissionAction.READ}:${PermissionScope.ANY}`,

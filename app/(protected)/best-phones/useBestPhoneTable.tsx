@@ -210,7 +210,7 @@ export const useBestPhoneTable = () => {
                 </a>
               </DropdownMenuItem>
 
-              {hasPermission(Permissions.BEST_PHONE_UPDATE) && (
+              {hasPermission(Permissions.BUDGET_PHONE_UPDATE) && (
                 <DropdownMenuItem
                   onClick={() =>
                     router.push(`/best-phones/${row.original.id}/edit`)
@@ -220,7 +220,7 @@ export const useBestPhoneTable = () => {
                 </DropdownMenuItem>
               )}
 
-              {hasPermission(Permissions.BEST_PHONE_DELETE) && (
+              {hasPermission(Permissions.BUDGET_PHONE_DELETE) && (
                 <DropdownMenuItem
                   onClick={() =>
                     setAction({

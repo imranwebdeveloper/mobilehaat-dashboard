@@ -85,7 +85,7 @@ const navGroups: {
         title: "Best Phones",
         url: "/best-phones",
         icon: <Trophy />,
-        permission: Permissions.BEST_PHONE_READ,
+        permission: Permissions.BUDGET_PHONE_READ,
       },
       {
         title: "Comparisons",

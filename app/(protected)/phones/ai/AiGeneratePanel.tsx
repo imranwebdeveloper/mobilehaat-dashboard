@@ -86,8 +86,12 @@ function StatusPill({ status }: { status: AiExtractionStatus }) {
 const SOURCE_META: Record<string, { label: string; className: string }> = {
   gsmarena: { label: "GSMArena", className: "bg-sky-500/15 text-sky-600" },
   mobiledokan: {
-    label: "MobileDokan",
+    label: "MobileDokan.co",
     className: "bg-amber-500/15 text-amber-600",
+  },
+  "mobiledokan-com": {
+    label: "MobileDokan.com",
+    className: "bg-emerald-500/15 text-emerald-600",
   },
   generic: { label: "Other", className: "bg-muted text-muted-foreground" },
   auto: { label: "Auto", className: "bg-muted text-muted-foreground" },
@@ -184,8 +188,22 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
       toast.error("Selected source is GSMArena — paste a gsmarena.com URL or switch to Auto")
       return
     }
-    if (source === "mobiledokan" && !trimmed.includes("mobiledokan.co")) {
-      toast.error("Selected source is MobileDokan — paste a mobiledokan.co URL or switch to Auto")
+    // Compare the hostname, not a substring: "mobiledokan.co" is also
+    // inside "mobiledokan.com", which is a different site.
+    let host = ""
+    try {
+      host = new URL(trimmed).hostname.toLowerCase()
+    } catch {
+      host = ""
+    }
+    const isHost = (domain: string) =>
+      host === domain || host.endsWith(`.${domain}`)
+    if (source === "mobiledokan" && !isHost("mobiledokan.co")) {
+      toast.error("Selected source is MobileDokan.co — paste a mobiledokan.co URL or switch to Auto")
+      return
+    }
+    if (source === "mobiledokan-com" && !isHost("mobiledokan.com")) {
+      toast.error("Selected source is MobileDokan.com — paste a mobiledokan.com URL or switch to Auto")
       return
     }
     try {
@@ -379,7 +397,8 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                   <SelectContent>
                     <SelectItem value="auto">Auto detect</SelectItem>
                     <SelectItem value="gsmarena">GSMArena</SelectItem>
-                    <SelectItem value="mobiledokan">MobileDokan</SelectItem>
+                    <SelectItem value="mobiledokan">MobileDokan.co</SelectItem>
+                    <SelectItem value="mobiledokan-com">MobileDokan.com</SelectItem>
                     <SelectItem value="generic">Other</SelectItem>
                   </SelectContent>
                 </Select>
@@ -388,8 +407,10 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                     source === "gsmarena"
                       ? "Paste a GSMArena specs URL (e.g. https://www.gsmarena.com/blackview_shark_8-12510.php)"
                       : source === "mobiledokan"
-                        ? "Paste a MobileDokan URL (e.g. https://www.mobiledokan.co/product/oneplus-16/)"
-                        : "Paste any supported specs URL (GSMArena or MobileDokan)"
+                        ? "Paste a MobileDokan.co URL (e.g. https://www.mobiledokan.co/product/oneplus-16/)"
+                        : source === "mobiledokan-com"
+                          ? "Paste a MobileDokan.com URL (e.g. https://www.mobiledokan.com/mobile/walton-xanon-x2-ultra)"
+                          : "Paste any supported specs URL (GSMArena, MobileDokan.co or MobileDokan.com)"
                   }
                   value={url}
                   onChange={(event) => setUrl(event.target.value)}
@@ -413,8 +434,8 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                {source === "mobiledokan"
-                  ? "MobileDokan is best for BD price, colors, release status and FAQ. Output format is identical to GSMArena."
+                {source === "mobiledokan" || source === "mobiledokan-com"
+                  ? "MobileDokan is best for BD price (official and unofficial), colors, release status and FAQ. Output format is identical to GSMArena."
                   : source === "gsmarena"
                     ? "GSMArena is best for full global specs. Output format is identical to MobileDokan."
                     : "The scraper auto-detects the site, extracts specs, and asks Gemini to build a full structured profile. This may take a minute or two."}
@@ -441,7 +462,8 @@ export default function AiGeneratePanel({ onFillForm }: AiGeneratePanelProps) {
                   <SelectContent>
                     <SelectItem value="auto">Auto</SelectItem>
                     <SelectItem value="gsmarena">GSMArena-like</SelectItem>
-                    <SelectItem value="mobiledokan">MobileDokan-like</SelectItem>
+                    <SelectItem value="mobiledokan">MobileDokan.co-like</SelectItem>
+                    <SelectItem value="mobiledokan-com">MobileDokan.com-like</SelectItem>
                     <SelectItem value="generic">Other</SelectItem>
                   </SelectContent>
                 </Select>

@@ -10,7 +10,13 @@ export interface ApproveExtractionResult {
   phone: unknown
 }
 
-export type ExtractionSourceHint = "auto" | "gsmarena" | "mobiledokan" | "generic"
+/** "mobiledokan" = mobiledokan.co, "mobiledokan-com" = mobiledokan.com */
+export type ExtractionSourceHint =
+  | "auto"
+  | "gsmarena"
+  | "mobiledokan"
+  | "mobiledokan-com"
+  | "generic"
 
 export interface CreateFromTextBody {
   text: string
